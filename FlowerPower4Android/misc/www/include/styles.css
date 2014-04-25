@@ -1,0 +1,14 @@
+body { font-family: Arial; }
+
+a { color: #8EAC32; }
+
+.info_box
+{
+	margin-left: 10px;
+	padding-left: 10px;
+	padding-right: 10px;
+	background-color: #FFFFFF;
+	border: 1px solid #F9C400; 
+	border-radius: 10px;
+	box-shadow:2px 2px 5px 1px #A4C639;
+}
