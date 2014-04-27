@@ -3,9 +3,6 @@ package de.fp4a.service;
 import java.util.ArrayList;
 import java.util.List;
 
-import de.fp4a.model.FlowerPower;
-import de.fp4a.util.FlowerPowerConstants;
-
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
@@ -14,6 +11,8 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.os.IBinder;
 import android.util.Log;
+import de.fp4a.model.FlowerPower;
+import de.fp4a.util.FlowerPowerConstants;
 
 public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 {
@@ -31,27 +30,27 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 	private Context context;
 	private String deviceAddress;
 	
-	private IFlowerPowerDevice device;
+	private FlowerPowerService service;
 	
 	private final ServiceConnection serviceConnection = new ServiceConnection() {
 
 		public void onServiceConnected(ComponentName componentName, IBinder serviceBinder)
 		{
-			device = ((FlowerPowerService.LocalBinder) serviceBinder).getService();
-			if (!((FlowerPowerService)device).initialize())
+			service = ((FlowerPowerService.LocalBinder) serviceBinder).getService();
+			if (!((FlowerPowerService)service).initialize())
 			{
 				Log.e(FlowerPowerConstants.TAG, "Unable to initialize Bluetooth service");
 				informListener(STATE_SERVICE_FAILED, null);
 				return;
 			}
-			device.connect(deviceAddress); // Automatically connects to the device upon successful start-up initialization.
+			service.connect(deviceAddress); // Automatically connects to the device upon successful start-up initialization.
 			Log.i(FlowerPowerConstants.TAG, "Bluetooth connection requested");
-			informListener(STATE_SERVICE_CONNECTED, device);
+			informListener(STATE_SERVICE_CONNECTED, service);
 		}
 
 		public void onServiceDisconnected(ComponentName componentName)
 		{
-			device = null;
+			service = null;
 			Log.i(FlowerPowerConstants.TAG, "Bluetooth service disconnected");
 			informListener(STATE_SERVICE_DISCONNECTED, null);
 		}
@@ -67,7 +66,7 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 			else if (FlowerPowerService.DISCONNECTED.equals(action))
 				informListener(STATE_DEVICE_DISCONNECTED, null);
 			else if (FlowerPowerService.SERVICES_DISCOVERED.equals(action))
-				informListener(STATE_DEVICE_READY, device);
+				informListener(STATE_DEVICE_READY, service);
 			else if (FlowerPowerService.DATA_AVAILABLE.equals(action))
 			{
 				FlowerPower fp = (FlowerPower)intent.getSerializableExtra(FlowerPowerService.EXTRA_DATA_MODEL);
@@ -91,7 +90,7 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 	public void unbind()
 	{
 		context.unbindService(serviceConnection);
-		device = null;
+		service = null;
 	}
 	
 	public void connect()
@@ -104,24 +103,24 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 
 		context.registerReceiver(serviceUpdateReceiver, intentFilter);
 		
-		if (device != null)
+		if (service != null)
 		{
-			boolean result = device.connect(deviceAddress);
+			boolean result = service.connect(deviceAddress);
 			Log.d(FlowerPowerConstants.TAG, "Connect request result=" + result);
 		}
 	}
 
 	public void disconnect()
 	{
-		device.disconnect();
+		service.disconnect();
 	}
 	
 	public boolean isConnected()
 	{
-		if (device == null)
+		if (service == null)
 			return false;
 		
-		return device.isConnected();
+		return service.isConnected();
 	}
 	
 	public void pause()

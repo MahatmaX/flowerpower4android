@@ -3,10 +3,6 @@ package de.fp4a.service;
 public interface IFlowerPowerDevice
 {
 
-	public boolean connect(String deviceAddress);
-	public void disconnect();
-	public boolean isConnected();
-	
 	public void readSystemId();
 	public void readModelNr();
 	public void readSerialNr();

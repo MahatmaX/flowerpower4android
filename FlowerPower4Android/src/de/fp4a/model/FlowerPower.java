@@ -198,6 +198,18 @@ public class FlowerPower implements Serializable
 			listener.get(i).sunlightChanged(sunlight);
 	}
 
+	public void addListener(FlowerPowerListener listener)
+	{
+		if (!this.listener.contains(listener))
+			this.listener.add(listener);
+	}
+	
+	public void removeListener(FlowerPowerListener listener)
+	{
+		if (this.listener.contains(listener))
+			this.listener.remove(listener);
+	}
+	
 	public ArrayList<FlowerPowerListener> getListener()
 	{
 		return listener;

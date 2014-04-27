@@ -74,11 +74,10 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	private FlowerPower flowerPower;
 	private Queue<BluetoothGattCharacteristic> readQueue;
 	
-	// Implements callback methods for GATT events that the app cares about. For
-	// example,
+	// Implements callback methods for GATT events that the app cares about. For example,
 	// connection change and services discovered.
 	private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
-		@Override
+
 		public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState)
 		{
 			if (newState == BluetoothProfile.STATE_CONNECTED)
@@ -100,7 +99,6 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			}
 		}
 
-		@Override
 		public void onServicesDiscovered(BluetoothGatt gatt, int status)
 		{
 			if (status == BluetoothGatt.GATT_SUCCESS)
@@ -113,7 +111,6 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			}
 		}
 
-		@Override
 		public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status)
 		{
 			if (status == BluetoothGatt.GATT_SUCCESS)
@@ -122,7 +119,6 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			}
 		}
 
-		@Override
 		public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
 		{
 			broadcastUpdate(DATA_AVAILABLE, characteristic);
@@ -154,7 +150,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_SOIL_MOISTURE))
 		{
-			int i = data[1] * 256 + (data[0] & 0xFF); // e.g. A2 01 should be 418, but resultRaw is an unsigned byte, thus we need to "make it signed"
+			int i = data[1] * 256 + (data[0] & 0xFF);
 			double soilMoisture = ValueMapper.getInstance(this).mapSoilMoisture(i);
 			flowerPower.setSoilMoisture(soilMoisture);
 		}
@@ -455,21 +451,6 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			if (readQueue.size() > 0) // read a characteristic if more 'jobs' are contained in the queue
 				readCharacteristic(readQueue.peek());
 		}
-	}
-	
-	/**
-	 * Retrieves a list of supported GATT services on the connected device. This
-	 * should be invoked only after {@code BluetoothGatt#discoverServices()}
-	 * completes successfully.
-	 * 
-	 * @return A {@code List} of supported services.
-	 */
-	public List<BluetoothGattService> getSupportedGattServices()
-	{
-		if (mBluetoothGatt == null)
-			return null;
-
-		return mBluetoothGatt.getServices();
 	}
 	
 	public BluetoothGattService getDeviceInformationService()

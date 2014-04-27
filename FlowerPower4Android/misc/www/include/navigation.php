@@ -24,12 +24,12 @@
 				<table>
 					<tr>
 						<td>
-							<a href="download.html">Download</a><br>
+							<a href="download.php">Download</a><br>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<a href="release_notes.html">Release Notes</a><br>
+							<a href="release_notes.php">Release Notes</a><br>
 						</td>
 					</tr>
 					<tr>
@@ -53,12 +53,12 @@
 				<table>
 					<tr>
 						<td>
-							<a href="tutorial/tutorial.html">Tutorial</a>
+							<a href="tutorial.php">Tutorial</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<a href="faq/faq.html">FAQ</a>
+							<a href="faq.php">FAQ</a>
 						</td>
 					</tr>
 					<tr>
@@ -68,12 +68,12 @@
 					</tr>
 					<tr>
 						<td>
-							<a href="class_diagram.html">Architecture</a> <small>(Class Diagram)</small>
+							<a href="class_diagram.php">Class Diagram</a>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<a href="paperchase/paperchase.html">Paper Chase</a> <small>(Demo Application)</small>
+							<a href="life_cycle.php">Lifecycle</a>
 						</td>
 					</tr>
 				</table>
