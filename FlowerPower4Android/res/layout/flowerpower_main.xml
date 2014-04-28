@@ -7,7 +7,161 @@
         android:layout_width="fill_parent"
         android:layout_height="fill_parent" >
 
-        
+        <TableRow
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:padding="5dip" >
+
+            <ImageView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:adjustViewBounds="true" 
+                android:contentDescription="Logo"
+                android:padding="5dip"
+                android:scaleType="fitCenter"
+                android:src="@drawable/ic_launcher" />
+
+            <TableLayout
+                android:layout_width="fill_parent"
+                android:layout_height="wrap_content"
+                android:paddingTop="10dip" >
+
+                <TableRow
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dip" >
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Battery"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_battery_level"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="5dip"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    
+                    <TextView
+                        android:id="@+id/tv_battery_level_timestamp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="5dip"
+                        android:textSize="10sp" />
+                    
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dip" >
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Temperature"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_temperature"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="5dip"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    
+                    <TextView
+                        android:id="@+id/tv_temperature_timestamp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="5dip"
+                        android:textSize="10sp" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dip" >
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Sunlight"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_sunlight"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="5dip"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    
+                    <TextView
+                        android:id="@+id/tv_sunlight_timestamp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="5dip"
+                        android:textSize="10sp" />
+                </TableRow>
+
+                <TableRow
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dip" >
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Soil Moisture"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tv_soil_moisture"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="5dip"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    
+                    <TextView
+                        android:id="@+id/tv_soil_moisture_timestamp"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingLeft="5dip" 
+                        android:textSize="10sp" />
+                </TableRow>
+                
+                <TableRow
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:padding="5dip" >
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Notifications ?"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                    
+                    <CheckBox
+                        android:id="@+id/checkbox_notifications"
+                        android:layout_width="wrap_content"
+                    	android:layout_height="wrap_content"
+                    	android:checked="false"
+                    	android:enabled="false"
+                    />
+                </TableRow>
+            </TableLayout>
+        </TableRow>
+
         <TableRow
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -25,7 +179,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="12sp" />
         </TableRow>
-        
+
         <TableRow
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -43,7 +197,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="12sp" />
         </TableRow>
-        
+
         <TableRow
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -61,7 +215,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="12sp" />
         </TableRow>
-        
+
         <TableRow
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -80,7 +234,7 @@
                 android:layout_height="wrap_content"
                 android:textSize="12sp" />
         </TableRow>
-            
+
         <TableRow
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
@@ -205,86 +359,6 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:textSize="12sp" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="5dip" >
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Battery"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_battery_level"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="12sp" 
-                android:textStyle="bold"/>
-        </TableRow>
-
-        <TableRow
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="5dip" >
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Temperature"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_temperature"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="5dip" >
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Sunlight"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tv_sunlight"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textStyle="bold" />
-        </TableRow>
-
-        <TableRow
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="5dip" >
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="Soil Moisture"
-                android:textSize="12sp" 
-                android:textStyle="bold"/>
-
-            <TextView
-                android:id="@+id/tv_soil_moisture"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textStyle="bold" />
         </TableRow>
     </TableLayout>
 

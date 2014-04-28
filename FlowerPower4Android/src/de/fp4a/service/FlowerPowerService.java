@@ -16,8 +16,6 @@
 
 package de.fp4a.service;
 
-import java.util.LinkedList;
-import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.UUID;
@@ -71,7 +69,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	public final static String EXTRA_DATA_MODEL = "de.fp4a.EXTRA_DATA_MODEL";
 
 	private FlowerPower flowerPower;
-	private Queue<BluetoothGattCharacteristic> readQueue;
+	private FlowerPowerServiceQueue queue;
+	private Timer timer;
 	
 	// Implements callback methods for GATT events that the app cares about. For example,
 	// connection change and services discovered.
@@ -79,6 +78,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 
 		public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState)
 		{
+			Log.i(TAG, "FlowerPowerService.onConnectionChange()");
+			
 			if (newState == BluetoothProfile.STATE_CONNECTED)
 			{
 				mConnectionState = STATE_CONNECTED;
@@ -100,27 +101,51 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 
 		public void onServicesDiscovered(BluetoothGatt gatt, int status)
 		{
+			Log.i(TAG, "FlowerPowerService.onServicesDiscovered()");
 			if (status == BluetoothGatt.GATT_SUCCESS)
 			{
 				broadcastUpdate(SERVICES_DISCOVERED);
 			}
 			else
 			{
-				Log.w(TAG, "onServicesDiscovered received: " + status);
+				Log.w(TAG, "FlowerPowerService.onServicesDiscovered() not successful: received: " + status);
 			}
 		}
 
 		public void onCharacteristicRead(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status)
 		{
+			queue.dequeueRead(characteristic); // remove the corresponding read task from the queue
+			
 			if (status == BluetoothGatt.GATT_SUCCESS)
 			{
+				Log.i(TAG, "FlowerPowerService.onCharacteristicRead() success");
 				broadcastUpdate(DATA_AVAILABLE, characteristic);
 			}
+			else
+				Log.w(TAG, "FlowerPowerService.onCharacteristicRead() NO success");
 		}
 
+		/**
+		 * Called upon a notification change. In contrast to a simple read, this method is continuously called if notifications are enabled.
+		 */
 		public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
 		{
+			Log.i(TAG, "FlowerPowerService.onCharacteristicChanged()");
 			broadcastUpdate(DATA_AVAILABLE, characteristic);
+		}
+		
+		public void onCharacteristicWrite(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic, int status)
+		{
+			// remove the corresponding notify task from the queue 
+			// (this has only an effect the first time this method is called for a registered notification)
+			queue.dequeueNotify(characteristic);
+			
+			if (status == BluetoothGatt.GATT_SUCCESS)
+			{
+				Log.i(TAG, "FlowerPowerService.onCharacteristicWrite() success");
+			}
+			else 
+				Log.w(TAG, "FlowerPowerService.onCharacteristicWrite() NO success");
 		}
 	};
 
@@ -221,6 +246,10 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			}	
 			flowerPower.getMetadata().setColor(color);
 		}
+		else
+		{
+			Log.w(TAG, "FlowerPowerService broadcastUpdate: unknown characterisitic: " + characteristic.getUuid().toString());
+		}
 		
 		intent.putExtra(EXTRA_DATA_RAW, data);
 		intent.putExtra(EXTRA_CHARACTERISTIC_NAME, FlowerPowerConstants.getCharacteristicName(characteristic, this));
@@ -232,9 +261,6 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		
 		// inform all broadcast receivers
 		sendBroadcast(intent);
-		
-		// remove the corresponding read task from the queue
-		dequeue(characteristic);
 	}
 
 	public class LocalBinder extends Binder
@@ -248,24 +274,29 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	@Override
 	public void onCreate()
 	{
-		readQueue = new LinkedList<BluetoothGattCharacteristic>();
+		Log.i(TAG, "FlowerPowerService.onCreate()");
+		queue = new FlowerPowerServiceQueue(this);
+		timer = new Timer();
 	}
 	
 	@Override
 	public void onDestroy()
 	{
+		Log.i(TAG, "FlowerPowerService.onDestroy()");
 		close();
 	}
 	
 	@Override
 	public IBinder onBind(Intent intent)
 	{
+		Log.i(TAG, "FlowerPowerService.onBind()");
 		return mBinder;
 	}
 
 	@Override
 	public boolean onUnbind(Intent intent)
 	{
+		Log.i(TAG, "FlowerPowerService.onUnbind()");
 		return super.onUnbind(intent);
 	}
 
@@ -312,6 +343,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public boolean connect(final String address)
 	{
+		Log.i(TAG, "FlowerPowerService.connect() to " + address);
+		
 		if (mBluetoothAdapter == null || address == null)
 		{
 			Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
@@ -355,12 +388,16 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void disconnect()
 	{
+		Log.i(TAG, "FlowerPowerService.disconnect()");
+		
 		if (mBluetoothAdapter == null || mBluetoothGatt == null)
 		{
 			Log.w(TAG, "BluetoothAdapter not initialized");
 			return;
 		}
 		mBluetoothGatt.disconnect();
+		
+		timer.cancel();
 	}
 	
 	public boolean isConnected()
@@ -374,6 +411,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void close()
 	{
+		Log.i(TAG, "FlowerPowerService.close()");
+		
 		if (mBluetoothGatt == null)
 		{
 			return;
@@ -430,27 +469,6 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		}
 		mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
 	}
-
-	private void enqueue(BluetoothGattCharacteristic chara)
-	{
-		readQueue.offer(chara);
-		if (readQueue.size() == 1) // if that's the only element in the queue we can immediately start to read
-			readCharacteristic(chara);
-	}
-	
-	private void dequeue(BluetoothGattCharacteristic chara)
-	{
-		// only remove if this characteristic is the one that was expected to be read.
-		// if the queue's head and the argument are not identical, then a notification was probably received
-		// and as notifications are received continuously, the corresponding read jobs are not contained in the queue.
-		if (readQueue.peek() == chara)
-		{
-			readQueue.remove();
-		
-			if (readQueue.size() > 0) // read a characteristic if more 'jobs' are contained in the queue
-				readCharacteristic(readQueue.peek());
-		}
-	}
 	
 	public BluetoothGattService getDeviceInformationService()
 	{
@@ -492,137 +510,177 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	{
 		Log.i(TAG, "Read temperature");
 		BluetoothGattCharacteristic chara = getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 	
 	public void readSunlight()
 	{
 		Log.i(TAG, "Read sunlight");
 		BluetoothGattCharacteristic chara = getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 	
 	public void readSoilMoisture()
 	{
 		Log.i(TAG, "Read soil moisture");
 		BluetoothGattCharacteristic chara = getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SOIL_MOISTURE));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 	
 	public void readBatteryLevel()
 	{
 		Log.i(TAG, "Read battery");
 		BluetoothGattCharacteristic chara = getSomeOtherService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_BATTERY_LEVEL));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 	
 	public void readSystemId()
 	{
 		Log.i(TAG, "Read system id");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SYSTEM_ID));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 	
 	public void readModelNr()
 	{
 		Log.i(TAG, "Read model nr");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_MODEL_NR));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 
 	public void readSerialNr()
 	{
 		Log.i(TAG, "Read serial nr");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SERIAL_NR));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 
 	public void readFirmwareRevision()
 	{
 		Log.i(TAG, "Read firmware rev");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_FIRMWARE_REVISION));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 
 	public void readHardwareRevision()
 	{
 		Log.i(TAG, "Read hardware rev");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_HARDWARE_REVISION));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 
 	public void readSoftwareRevision()
 	{
 		Log.i(TAG, "Read software rev");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SOFTWARE_REVISION));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 
 	public void readManufacturerName()
 	{
 		Log.i(TAG, "Read manufacturer name");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_MANUFACTURER_NAME));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 
 	public void readCertData()
 	{
 		Log.i(TAG, "Read cert data");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_CERT_DATA));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 
 	public void readPnpId()
 	{
 		Log.i(TAG, "Read pnp id");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_PNP_ID));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 	
 	public void readFriendlyName()
 	{
 		Log.i(TAG, "Read friendly name");
 		BluetoothGattCharacteristic chara = getSomeOtherService2().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_FRIENDLY_NAME));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 	
 	public void readColor()
 	{
 		Log.i(TAG, "Read color");
 		BluetoothGattCharacteristic chara = getSomeOtherService2().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_COLOR));
-		enqueue(chara);
+		queue.enqueueRead(chara);
 	}
 	
-	private void notify(final BluetoothGattCharacteristic characteristic, final boolean enable)
+	public void notify(final BluetoothGattCharacteristic characteristic, final boolean enable)
 	{
+		Log.i(TAG, (enable ? "Enable" : "Disable") + " Notification for " + FlowerPowerConstants.getCharacteristicName(characteristic, this));
+		
 		UUID uuidLiveMode = UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_LIVE_MODE); // that's 39e1fa06-84a8-11e2-afba-0002a5d5c51b
 		
-		BluetoothGattCharacteristic chara = getFlowerPowerService().getCharacteristic(uuidLiveMode);
-		chara.setValue(enable ? new byte[] {0x01} : new byte[] {0x00});
-		writeCharacteristic(chara);
-		
-		TimerTask tt = new TimerTask() {
-			public void run()
-			{
-				setCharacteristicNotification(characteristic, enable);
-			}
-		};
-		Timer t = new Timer();
-		t.schedule(tt, 1000);
+		BluetoothGattCharacteristic liveModeChara = getFlowerPowerService().getCharacteristic(uuidLiveMode);
+		liveModeChara.setValue(enable ? new byte[] {0x01} : new byte[] {0x00});
+		writeCharacteristic(liveModeChara);
+			
+		setCharacteristicNotification(characteristic, enable); 
 	}
 	
 	public void notifyTemperature(boolean enable)
 	{
-		notify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE)), enable);
-	}
-	
-	public void notifySoilMoisture(boolean enable)
-	{
-		notify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SOIL_MOISTURE)), enable);
+		queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE)), enable);
 	}
 	
 	public void notifySunlight(boolean enable)
 	{
-		notify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT)), enable);
+		queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT)), enable);
+	}
+	
+	private TimerTask timerTaskNotifySoilMoisture;
+	public void notifySoilMoisture(boolean enable)
+	{
+		// for some reason, the 'classic' notification mechanism does not work for this characteristic
+		// hence use a timer for periodically update the notification
+		
+		if (timerTaskNotifySoilMoisture != null) // if task already exists, cancel
+		{
+			timerTaskNotifySoilMoisture.cancel();
+			timerTaskNotifySoilMoisture = null;
+			timer.purge();
+		}
+		
+		if (enable) // create and schedule a new task if required
+		{
+			timerTaskNotifySoilMoisture = new TimerTask() {
+				public void run()
+				{
+					readSoilMoisture();
+				} 
+			};
+			timer.schedule(timerTaskNotifySoilMoisture, 0, 1000);
+		}
+	}
+	
+	private TimerTask timerTaskNotifyBatteryLevel;
+	public void notifyBatteryLevel(boolean enable)
+	{
+		// for some reason, the 'classic' notification mechanism does not work for this characteristic
+		// hence use a timer for periodically update the notification
+		
+		if (timerTaskNotifyBatteryLevel != null) // if task already exists, cancel
+		{
+			timerTaskNotifyBatteryLevel.cancel();
+			timerTaskNotifyBatteryLevel = null;
+			timer.purge();
+		}
+		
+		if (enable) // create and schedule a new task if required
+		{
+			timerTaskNotifyBatteryLevel = new TimerTask() {
+				public void run()
+				{
+					readBatteryLevel();
+				}
+			};
+			timer.schedule(timerTaskNotifyBatteryLevel, 0, 1000);
+		}
 	}
 }

@@ -19,8 +19,12 @@ package de.fp4a.gui;
 import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.CheckBox;
 import android.widget.TextView;
 import de.fp4a.R;
 import de.fp4a.model.FlowerPower;
@@ -28,6 +32,8 @@ import de.fp4a.service.FlowerPowerServiceManager;
 import de.fp4a.service.IFlowerPowerDevice;
 import de.fp4a.service.IFlowerPowerServiceListener;
 import de.fp4a.service.IFlowerPowerServiceManager;
+import de.fp4a.util.FlowerPowerConstants;
+import de.fp4a.util.Util;
 
 /**
  * For a given BLE device, this Activity provides the user interface to connect,
@@ -41,6 +47,7 @@ public class FlowerPowerActivity extends Activity
 	public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 
 	private IFlowerPowerServiceManager serviceManager;
+	private IFlowerPowerDevice device;
 	
 	private void updateUI(FlowerPower fp)
 	{
@@ -55,16 +62,26 @@ public class FlowerPowerActivity extends Activity
 		((TextView)findViewById(R.id.tv_pnp_id)).setText(fp.getMetadata().getPnpId()+"");
 		((TextView)findViewById(R.id.tv_friendly_name)).setText(fp.getMetadata().getFriendlyName()+"");
 		((TextView)findViewById(R.id.tv_color)).setText(fp.getMetadata().getColor()+"");
+		
 		((TextView)findViewById(R.id.tv_battery_level)).setText(fp.getBatteryLevel()+"");
+		((TextView)findViewById(R.id.tv_battery_level_timestamp)).setText(Util.getHumanReadableTimestamp(fp.getBatteryLevelTimestamp(), false)+"");
+		
 		((TextView)findViewById(R.id.tv_temperature)).setText(fp.getTemperature()+"");
+		((TextView)findViewById(R.id.tv_temperature_timestamp)).setText(Util.getHumanReadableTimestamp(fp.getTemperatureTimestamp(), false)+"");
+		
 		((TextView)findViewById(R.id.tv_sunlight)).setText(fp.getSunlight()+"");
+		((TextView)findViewById(R.id.tv_sunlight_timestamp)).setText(Util.getHumanReadableTimestamp(fp.getSunlightTimestamp(), false)+"");
+		
 		((TextView)findViewById(R.id.tv_soil_moisture)).setText(fp.getSoilMoisture()+"");
+		((TextView)findViewById(R.id.tv_soil_moisture_timestamp)).setText(Util.getHumanReadableTimestamp(fp.getSoilMoistureTimestamp(), false)+"");
 	}
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
+		Log.i(FlowerPowerConstants.TAG, "Activity.onCreate()");
+		
 		setContentView(R.layout.flowerpower_main);
 
 		final Intent intent = getIntent();
@@ -72,21 +89,46 @@ public class FlowerPowerActivity extends Activity
 		String deviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
 
 		getActionBar().setTitle(deviceName);
+		final CheckBox checkBox = (CheckBox)findViewById(R.id.checkbox_notifications);
+		checkBox.setOnClickListener(new OnClickListener() {
+			public void onClick(View v)
+			{
+				Log.i(FlowerPowerConstants.TAG, "Activity.onClick() Notifications " + (checkBox.isChecked() ? "enabled" : "disabled") + ", device connected ? " + serviceManager.isConnected());
+				
+				device.notifyTemperature(checkBox.isChecked());
+				device.notifySunlight(checkBox.isChecked());
+				device.notifySoilMoisture(checkBox.isChecked());
+				device.notifyBatteryLevel(checkBox.isChecked());
+			}
+		});
+		
+		
 		serviceManager = new FlowerPowerServiceManager(deviceAddress, this);
 		IFlowerPowerServiceListener serviceListener = new IFlowerPowerServiceListener() {
 			
 			public void deviceConnected()
 			{
+				Log.i(FlowerPowerConstants.TAG, "Activity.serviceListener() device connected");
 				invalidateOptionsMenu();
 			}
 			
 			public void deviceDisconnected()
 			{
+				Log.i(FlowerPowerConstants.TAG, "Activity.serviceListener() device disconnected");
 				invalidateOptionsMenu();
+				
+				((CheckBox)findViewById(R.id.checkbox_notifications)).setEnabled(false);
+				FlowerPowerActivity.this.device = null;
+				
+//				serviceManager.disconnect();
 			}
 			
 			public void deviceReady(IFlowerPowerDevice device)
 			{
+				Log.i(FlowerPowerConstants.TAG, "Activity.serviceListener() device ready");
+				((CheckBox)findViewById(R.id.checkbox_notifications)).setEnabled(true);
+				FlowerPowerActivity.this.device = device;
+				
 				device.readSystemId();
 				device.readModelNr();
 				device.readSerialNr();
@@ -95,7 +137,7 @@ public class FlowerPowerActivity extends Activity
 				device.readSoftwareRevision();
 				device.readManufacturerName();
 				device.readCertData();
-				device.readPnpId();
+				device.readPnpId(); 
 				device.readFriendlyName();
 				device.readColor();
 				
@@ -110,16 +152,19 @@ public class FlowerPowerActivity extends Activity
 				updateUI(fp);
 			}
 			
-			public void serviceConnected() { /* does not neccessarily need to be handled */ }
+			public void serviceConnected() { Log.i(FlowerPowerConstants.TAG, "Activity.serviceListener() service connected"); /* does not neccessarily need to be handled */ }
 			
-			public void serviceDisconnected() { /* does not neccessarily need to be handled */ }				
+			public void serviceDisconnected() { Log.i(FlowerPowerConstants.TAG, "Activity.serviceListener() service disconnected");/* does not neccessarily need to be handled */ }				
 			
 			public void serviceFailed()
 			{
+				Log.e(FlowerPowerConstants.TAG, "Activity.serviceListener() service failed -> finish");
 				finish();
 			}
 		};
 		serviceManager.addServiceListener(serviceListener);
+		
+		Log.i(FlowerPowerConstants.TAG, "Activity.onCreate() bind serviceManager");
 		serviceManager.bind();
 	}
 
@@ -127,6 +172,7 @@ public class FlowerPowerActivity extends Activity
 	protected void onResume()
 	{
 		super.onResume();
+		Log.i(FlowerPowerConstants.TAG, "Activity.onResume() connect serviceManager");
 		serviceManager.connect();
 	}
 
@@ -134,6 +180,7 @@ public class FlowerPowerActivity extends Activity
 	protected void onPause()
 	{
 		super.onPause();
+		Log.i(FlowerPowerConstants.TAG, "Activity.onPause() pause serviceManager");
 		serviceManager.pause();
 	}
 
@@ -141,6 +188,7 @@ public class FlowerPowerActivity extends Activity
 	protected void onDestroy()
 	{
 		super.onDestroy();
+		Log.i(FlowerPowerConstants.TAG, "Activity.onDestroy() unbind serviceManager");
 		serviceManager.unbind();
 	}
 
