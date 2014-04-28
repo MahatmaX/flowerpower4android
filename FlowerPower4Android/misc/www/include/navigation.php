@@ -24,17 +24,12 @@
 				<table>
 					<tr>
 						<td>
-							<a href="download.php">Download</a><br>
+							<a href="download.php">Download &amp; Release Notes</a><br>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<a href="release_notes.php">Release Notes</a><br>
-						</td>
-					</tr>
-					<tr>
-						<td>
-							<a href="https://github.com/MahatmaX/FlowerPower4Android/issues">Issue Tracker</a>
+							<a href="https://github.com/MahatmaX/flowerpower4android/issues" target="_blank">Issue Tracker</a>
 						</td>
 					</tr>
 				</table>
@@ -53,19 +48,21 @@
 				<table>
 					<tr>
 						<td>
-							<a href="tutorial.php">Tutorial</a>
+							<a href="#">Tutorial</a> <small>(soon to come)</small>
 						</td>
 					</tr>
 					<tr>
 						<td>
-							<a href="faq.php">FAQ</a>
+							<a href="#">FAQ</a> <small>(nothing asked yet)</small>
 						</td>
 					</tr>
+					<!--
 					<tr>
 						<td>
 							<a href="javadoc/index.html" target="_blank">API Documentation</a> <small>(JavaDoc)</small>
 						</td>
 					</tr>
+					-->
 					<tr>
 						<td>
 							<a href="class_diagram.php">Class Diagram</a>

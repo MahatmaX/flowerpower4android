@@ -26,7 +26,7 @@
 		<table width="1000" border="0" cellspacing="10">
 			<tr>
 				<td>
-					<img src="images/logo.png" alt="logo" width="100" height="125">
+					<a href="index.php"><img src="images/logo.png" alt="logo" width="100" height="125" border="0"></a>
 				</td>
 				<td>
 					<h2>Flower Power for Android</h2> 
