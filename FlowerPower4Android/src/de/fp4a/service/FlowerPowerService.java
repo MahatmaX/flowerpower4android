@@ -17,7 +17,6 @@
 package de.fp4a.service;
 
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Queue;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -38,7 +37,7 @@ import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
 import de.fp4a.model.FlowerPower;
-import de.fp4a.model.FlowerPower.FlowerPowerColors;
+import de.fp4a.model.FlowerPowerMetadata.FlowerPowerColors;
 import de.fp4a.util.FlowerPowerConstants;
 import de.fp4a.util.Util;
 import de.fp4a.util.ValueMapper;
@@ -162,52 +161,52 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_SYSTEM_ID)) 
 		{
 			String systemId = Util.data2hex(data);
-			flowerPower.setSystemId(systemId.substring(0, systemId.length()-2)); // cut off the last ':'
+			flowerPower.getMetadata().setSystemId(systemId.substring(0, systemId.length()-2)); // cut off the last ':'
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_MODEL_NR)) 
 		{
 			String str = new String(data);
-			flowerPower.setModelNr(str);
+			flowerPower.getMetadata().setModelNr(str);
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_SERIAL_NR)) 
 		{
 			String str = new String(data);  
-			flowerPower.setSerialNr(str);
+			flowerPower.getMetadata().setSerialNr(str);
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_FIRMWARE_REVISION)) 
 		{
 			String str = new String(data); 
-			flowerPower.setFirmwareRevision(str);
+			flowerPower.getMetadata().setFirmwareRevision(str);
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_HARDWARE_REVISION)) 
 		{
 			String str = new String(data); 
-			flowerPower.setHardwareRevision(str);
+			flowerPower.getMetadata().setHardwareRevision(str);
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_SOFTWARE_REVISION)) 
 		{
 			String str = new String(data); 
-			flowerPower.setSoftwareRevision(str);
+			flowerPower.getMetadata().setSoftwareRevision(str);
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_MANUFACTURER_NAME)) 
 		{
 			String str = new String(data); 
-			flowerPower.setManufacturerName(str);
+			flowerPower.getMetadata().setManufacturerName(str);
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_CERT_DATA)) 
 		{
 			String str = new String(data); 
-			flowerPower.setCertData(str);
+			flowerPower.getMetadata().setCertData(str);
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_PNP_ID)) 
 		{
 			String str = new String(data); 
-			flowerPower.setPnpId(str);
+			flowerPower.getMetadata().setPnpId(str);
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_FRIENDLY_NAME)) 
 		{
 			String str = new String(data); 
-			flowerPower.setFriendlyName(str);
+			flowerPower.getMetadata().setFriendlyName(str);
 		}
 		else if (characteristic.getUuid().toString().equals(FlowerPowerConstants.CHARACTERISTIC_UUID_COLOR))
 		{
@@ -220,7 +219,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 				case 7: color = FlowerPowerColors.BLUE; break;
 				default: color = FlowerPowerColors.UNKNOWN; 
 			}	
-			flowerPower.setColor(color);
+			flowerPower.getMetadata().setColor(color);
 		}
 		
 		intent.putExtra(EXTRA_DATA_RAW, data);

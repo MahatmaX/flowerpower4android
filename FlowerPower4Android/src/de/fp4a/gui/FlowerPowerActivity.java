@@ -23,9 +23,6 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 import de.fp4a.R;
-import de.fp4a.R.id;
-import de.fp4a.R.layout;
-import de.fp4a.R.menu;
 import de.fp4a.model.FlowerPower;
 import de.fp4a.service.FlowerPowerServiceManager;
 import de.fp4a.service.IFlowerPowerDevice;
@@ -47,17 +44,17 @@ public class FlowerPowerActivity extends Activity
 	
 	private void updateUI(FlowerPower fp)
 	{
-		((TextView)findViewById(R.id.tv_system_id)).setText(fp.getSystemId()+"");
-		((TextView)findViewById(R.id.tv_model_nr)).setText(fp.getModelNr()+"");
-		((TextView)findViewById(R.id.tv_serial_nr)).setText(fp.getSerialNr()+"");
-		((TextView)findViewById(R.id.tv_firmware_rev)).setText(fp.getFirmwareRevision()+"");
-		((TextView)findViewById(R.id.tv_hardware_rev)).setText(fp.getHardwareRevision()+"");
-		((TextView)findViewById(R.id.tv_software_rev)).setText(fp.getSoftwareRevision()+"");
-		((TextView)findViewById(R.id.tv_manufacturer_name)).setText(fp.getManufacturerName()+"");
-		((TextView)findViewById(R.id.tv_cert_data)).setText(fp.getCertData()+"");
-		((TextView)findViewById(R.id.tv_pnp_id)).setText(fp.getPnpId()+"");
-		((TextView)findViewById(R.id.tv_friendly_name)).setText(fp.getFriendlyName()+"");
-		((TextView)findViewById(R.id.tv_color)).setText(fp.getColor()+"");
+		((TextView)findViewById(R.id.tv_system_id)).setText(fp.getMetadata().getSystemId()+"");
+		((TextView)findViewById(R.id.tv_model_nr)).setText(fp.getMetadata().getModelNr()+"");
+		((TextView)findViewById(R.id.tv_serial_nr)).setText(fp.getMetadata().getSerialNr()+"");
+		((TextView)findViewById(R.id.tv_firmware_rev)).setText(fp.getMetadata().getFirmwareRevision()+"");
+		((TextView)findViewById(R.id.tv_hardware_rev)).setText(fp.getMetadata().getHardwareRevision()+"");
+		((TextView)findViewById(R.id.tv_software_rev)).setText(fp.getMetadata().getSoftwareRevision()+"");
+		((TextView)findViewById(R.id.tv_manufacturer_name)).setText(fp.getMetadata().getManufacturerName()+"");
+		((TextView)findViewById(R.id.tv_cert_data)).setText(fp.getMetadata().getCertData()+"");
+		((TextView)findViewById(R.id.tv_pnp_id)).setText(fp.getMetadata().getPnpId()+"");
+		((TextView)findViewById(R.id.tv_friendly_name)).setText(fp.getMetadata().getFriendlyName()+"");
+		((TextView)findViewById(R.id.tv_color)).setText(fp.getMetadata().getColor()+"");
 		((TextView)findViewById(R.id.tv_battery_level)).setText(fp.getBatteryLevel()+"");
 		((TextView)findViewById(R.id.tv_temperature)).setText(fp.getTemperature()+"");
 		((TextView)findViewById(R.id.tv_sunlight)).setText(fp.getSunlight()+"");

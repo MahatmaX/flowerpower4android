@@ -1,149 +1,29 @@
 package de.fp4a.model;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 
 public class FlowerPower implements Serializable
 {
-	public enum FlowerPowerColors {UNKNOWN, BROWN, BLUE, GREEN};
-	
-	// ToDo: Timestamps for every value
-	
-	// static fields, these normally do not change
-	private String systemId 		= "";
-	private String modelNr 			= "";
-	private String serialNr 		= "";
-	private String firmwareRevision	= "";
-	private String hardwareRevision	= "";
-	private String softwareRevision	= "";
-	private String manufacturerName	= "";
-	private String certData 		= ""; // IEEE 11073-20601 regulatory certification data list
-	private String pnpId 			= "";
-	private String friendlyName 	= "";
-	private FlowerPowerColors color	= FlowerPowerColors.UNKNOWN; // one of enum 'FlowerPowerColors'
-	
-	// variable fields, these normally do change over time
+
+	private static final long serialVersionUID = 5156641917291655184L;
+
 	private int batteryLevel 	= -1;
-	private double temperature	= -1;
-	private double soilMoisture	= -1;
-	private double sunlight 	= -1;
+	private long batteryLevelTimestamp;
 	
-	// listeners get notified upon updated variable values (see above)
-	private ArrayList<FlowerPowerListener> listener;
+	private double temperature	= -1;
+	private long temperatureTimestamp;
+	
+	private double soilMoisture	= -1;
+	private long soilMoistureTimestamp;
+	
+	private double sunlight 	= -1;
+	private long sunlightTimestamp;
+	
+	private FlowerPowerMetadata metadata;
 	
 	public FlowerPower()
 	{
-		listener = new ArrayList<FlowerPowerListener>();
-	}
-
-	public String getSystemId()
-	{
-		return systemId;
-	}
-
-	public void setSystemId(String systemId)
-	{
-		this.systemId = systemId;
-	}
-
-	public String getModelNr()
-	{
-		return modelNr;
-	}
-
-	public void setModelNr(String modelNr)
-	{
-		this.modelNr = modelNr;
-	}
-
-	public String getSerialNr()
-	{
-		return serialNr;
-	}
-
-	public void setSerialNr(String serialNr)
-	{
-		this.serialNr = serialNr;
-	}
-
-	public String getFirmwareRevision()
-	{
-		return firmwareRevision;
-	}
-
-	public void setFirmwareRevision(String firmwareRevision)
-	{
-		this.firmwareRevision = firmwareRevision;
-	}
-
-	public String getHardwareRevision()
-	{
-		return hardwareRevision;
-	}
-
-	public void setHardwareRevision(String hardwareRevision)
-	{
-		this.hardwareRevision = hardwareRevision;
-	}
-
-	public String getSoftwareRevision()
-	{
-		return softwareRevision;
-	}
-
-	public void setSoftwareRevision(String softwareRevision)
-	{
-		this.softwareRevision = softwareRevision;
-	}
-
-	public String getManufacturerName()
-	{
-		return manufacturerName;
-	}
-
-	public void setManufacturerName(String manufacturerName)
-	{
-		this.manufacturerName = manufacturerName;
-	}
-
-	public String getCertData()
-	{
-		return certData;
-	}
-
-	public void setCertData(String certData)
-	{
-		this.certData = certData;
-	}
-
-	public String getPnpId()
-	{
-		return pnpId;
-	}
-
-	public void setPnpId(String pnpId)
-	{
-		this.pnpId = pnpId;
-	}
-
-	public String getFriendlyName()
-	{
-		return friendlyName;
-	}
-
-	public void setFriendlyName(String friendlyName)
-	{
-		this.friendlyName = friendlyName;
-	}
-
-	public FlowerPowerColors getColor()
-	{
-		return color;
-	}
-
-	public void setColor(FlowerPowerColors color)
-	{
-		this.color = color;
+		metadata = new FlowerPowerMetadata();
 	}
 
 	public int getBatteryLevel()
@@ -154,10 +34,14 @@ public class FlowerPower implements Serializable
 	public void setBatteryLevel(int batteryLevel)
 	{
 		this.batteryLevel = batteryLevel;
-		for (int i=0; i < listener.size(); i++)
-			listener.get(i).batteryChanged(batteryLevel);
+		this.batteryLevelTimestamp = System.currentTimeMillis();
 	}
 
+	public long getBatteryLevelTimestamp()
+	{
+		return batteryLevelTimestamp;
+	}
+	
 	public double getTemperature()
 	{
 		return temperature;
@@ -166,22 +50,30 @@ public class FlowerPower implements Serializable
 	public void setTemperature(double temperature)
 	{
 		this.temperature = temperature;
-		for (int i=0; i < listener.size(); i++)
-			listener.get(i).temperatureChanged(temperature);
+		this.temperatureTimestamp = System.currentTimeMillis();
 	}
-
+	
+	public long getTemperatureTimestamp()
+	{
+		return temperatureTimestamp;
+	}
+	
 	public double getSoilMoisture()
 	{
 		return soilMoisture;
 	}
-
+	
 	public void setSoilMoisture(double soilMoisture)
 	{
 		this.soilMoisture = soilMoisture;
-		for (int i=0; i < listener.size(); i++)
-			listener.get(i).soilMoistureChanged(soilMoisture);
+		this.soilMoistureTimestamp = System.currentTimeMillis();
 	}
 
+	public long getSoilMoistureTimestamp()
+	{
+		return soilMoistureTimestamp;
+	}
+	
 	public double getSunlight()
 	{
 		// sunlight is PPF (photons per square meter), convert to lux
@@ -194,37 +86,49 @@ public class FlowerPower implements Serializable
 	public void setSunlight(double sunlight)
 	{
 		this.sunlight = sunlight;
-		for (int i=0; i < listener.size(); i++)
-			listener.get(i).sunlightChanged(sunlight);
-	}
-
-	public void addListener(FlowerPowerListener listener)
-	{
-		if (!this.listener.contains(listener))
-			this.listener.add(listener);
+		this.sunlightTimestamp = System.currentTimeMillis();
 	}
 	
-	public void removeListener(FlowerPowerListener listener)
+	public long getSunlightTimestamp()
 	{
-		if (this.listener.contains(listener))
-			this.listener.remove(listener);
+		return sunlightTimestamp;
+	}
+
+	public FlowerPowerMetadata getMetadata()
+	{
+		return metadata;
 	}
 	
-	public ArrayList<FlowerPowerListener> getListener()
+	
+	public int hashCode()
 	{
-		return listener;
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((metadata == null) ? 0 : metadata.hashCode());
+		return result;
 	}
 
-	public void setListener(ArrayList<FlowerPowerListener> listener)
+	public boolean equals(Object obj)
 	{
-		this.listener = listener;
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		FlowerPower other = (FlowerPower) obj;
+		if (metadata == null)
+		{
+			if (other.metadata != null)
+				return false;
+		}
+		else if (!metadata.equals(other.metadata))
+			return false;
+		return true;
 	}
 
-	@Override
 	public String toString()
 	{
-		return "FlowerPower [systemId=" + systemId + ", modelNr=" + modelNr + ", serialNr=" + serialNr + ", firmwareRevision=" + firmwareRevision + ", hardwareRevision=" + hardwareRevision + ", softwareRevision=" + softwareRevision + ", manufacturerName=" + manufacturerName + ", certData=" + certData + ", pnpId=" + pnpId + ", friendlyName=" + friendlyName + ", color=" + color + ", batteryLevel=" + batteryLevel + ", temperature=" + temperature + ", soilMoisture=" + soilMoisture + ", sunlight=" + sunlight + "]";
+		return "FlowerPower [batteryLevel=" + batteryLevel + ", temperature=" + temperature + ", soilMoisture=" + soilMoisture + ", sunlight=" + sunlight + "]";
 	}
-	
-	
 }
