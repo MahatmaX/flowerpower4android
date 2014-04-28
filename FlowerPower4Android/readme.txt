@@ -13,7 +13,7 @@ It's main features are:
 * More to come :-)
 
 For further information, documentation and tutorials please see
-http://vsis-www.informatik.uni-hamburg.de/projects/flowerpower4android/index.php
+http://vsis-www.informatik.uni-hamburg.de/oldServer/teaching//projects/flowerpower4android/index.php
 
 Never worked with Github before ?
 http://wiki.eclipse.org/EGit/User_Guide#Getting_Started
