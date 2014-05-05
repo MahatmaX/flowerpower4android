@@ -22,6 +22,7 @@ import java.util.UUID;
 
 import android.app.Service;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothAdapter.LeScanCallback;
 import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothGattCallback;
@@ -31,6 +32,7 @@ import android.bluetooth.BluetoothManager;
 import android.bluetooth.BluetoothProfile;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.os.Binder;
 import android.os.IBinder;
 import android.util.Log;
@@ -57,10 +59,13 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	private static final int STATE_CONNECTING = 1;
 	private static final int STATE_CONNECTED = 2;
 
+	public final static String DEVICE_DISCOVERED = "de.fp4a.ACTION_DEVICES_DISCOVERED";
 	public final static String CONNECTED = "de.fp4a.ACTION_GATT_CONNECTED";
 	public final static String DISCONNECTED = "de.fp4a.ACTION_GATT_DISCONNECTED";
 	public final static String SERVICES_DISCOVERED = "de.fp4a.ACTION_GATT_SERVICES_DISCOVERED";
 	public final static String DATA_AVAILABLE = "de.fp4a.ACTION_DATA_AVAILABLE";
+	
+	public final static String EXTRA_DEVICE_MODEL = "de.fp4a.EXTRA_DEVICE_MODEL";
 	
 	public final static String EXTRA_CHARACTERISTIC_NAME = "de.fp4a.EXTRA_CHARACTERISTIC_NAME";
 	public final static String EXTRA_DATA_STRING = "de.fp4a.EXTRA_DATA";
@@ -81,6 +86,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	private Timer timer;
 	private TimerTask timerTaskNotifySoilMoisture;
 	private TimerTask timerTaskNotifyBatteryLevel;
+	private TimerTask timerTaskAutoConnect;
 	
 	// Implements callback methods for GATT events that the app cares about. For example,
 	// connection change and services discovered.
@@ -162,6 +168,14 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	private void broadcastUpdate(final String action)
 	{
 		final Intent intent = new Intent(action);
+		sendBroadcast(intent);
+	}
+	
+	private void broadcastUpdate(final String action, BluetoothDeviceModel device)
+	{
+		final Intent intent = new Intent(action);
+		intent.putExtra(EXTRA_DEVICE_MODEL, device);
+		
 		sendBroadcast(intent);
 	}
 
@@ -297,7 +311,6 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	{
 		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onCreate()");
 		queue = new FlowerPowerServiceQueue(this);
-		timer = new Timer();
 	}
 	
 	@Override
@@ -322,36 +335,59 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	}
 
 	private final IBinder mBinder = new LocalBinder();
+	
 
 	/**
 	 * Initializes a reference to the local Bluetooth adapter.
 	 * 
 	 * @return Return true if the initialization is successful.
 	 */
-	public boolean initialize()
+	public void initialize() throws RuntimeException
 	{
-		// For API level 18 and above, get a reference to BluetoothAdapter through BluetoothManager.
+		// Use this check to determine whether BLE is supported on the device.
+		if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE))
+		{
+			throw new BluetoothNotSupportedException("Device lacks system feature 'Bluetooth'");
+		}
+		
 		if (bluetoothManager == null)
 		{
 			bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
 			if (bluetoothManager == null)
 			{
 				Log.e(FlowerPowerConstants.TAG, "Unable to initialize BluetoothManager.");
-				return false;
+				throw new BluetoothNotSupportedException("BluetoothManager could not be initialized");
 			}
 		}
 
 		bluetoothAdapter = bluetoothManager.getAdapter();
-		if (bluetoothAdapter == null)
+		if (bluetoothAdapter == null) // // Checks if Bluetooth is supported on the device.
 		{
 			Log.e(FlowerPowerConstants.TAG, "Unable to obtain a BluetoothAdapter.");
-			return false;
+			throw new BluetoothNotSupportedException("BluetoothManager could not be obtained");
 		}
 
+		if (!isEnabled())
+		{
+			throw new BluetoothNotEnabledException("Bluetooth is not enabled");
+		}
+		
 		persistencyManager = PersistencyManager.getInstance(this);
-		return true;
 	}
-
+	
+	/**
+	 * Scan for Bluetooth devices in the surrounding. The results are delivered as broadcast - use action DEVICES_DISCOVERED to listen for these events.
+	 */
+	public void scanDevices()
+	{
+		bluetoothAdapter.startLeScan(new LeScanCallback() {
+			public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord)
+			{
+				broadcastUpdate(DEVICE_DISCOVERED, new BluetoothDeviceModel(device.getName(), device.getAddress(), rssi, scanRecord));
+			}
+		});
+	}
+	
 	/**
 	 * Connects to the GATT server hosted on the Bluetooth LE device.
 	 * 
@@ -366,6 +402,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	public boolean connect(final String address)
 	{
 		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.connect() to " + address);
+		timer = new Timer();
 		
 		if (bluetoothAdapter == null || address == null)
 		{
@@ -422,11 +459,46 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		timer.cancel();
 	}
 	
+	/**
+	 * Checks if Bluetooth is enabled. If it is not enabled, the user should be forwarded to the System's preferences, e.g. via 
+	 * Intent enableBtIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+	 * startActivityForResult(enableBtIntent, 1);
+	 * Ideally, this check is done in an onResume method. Just to make sure it is called also when an application is brought to the front again.
+	 * @return  true, if bluetooth is enabled, false otherwise.
+	 */
+	public boolean isEnabled()
+	{
+		return bluetoothAdapter.isEnabled();
+	}
+	
 	public boolean isConnected()
 	{
 		return mConnectionState == STATE_CONNECTED;
 	}
 
+	/**
+	 * Enable auto-connect. If enabled, the service will periodically check if the device is still connected and if not, re-connect.
+	 * @param intervall  Check-intervall in milliseconds. 
+	 */
+	public void enableAutoConnect(long period)
+	{
+		timerTaskAutoConnect = new TimerTask() {
+			public void run()
+			{
+				if (!isConnected() && isEnabled())
+					connect(bluetoothDeviceAddress);
+			}
+		};
+		timer.schedule(timerTaskAutoConnect, period, period);
+	}
+	
+	public void disableAutoConnect()
+	{
+		timerTaskAutoConnect.cancel();
+		timerTaskAutoConnect = null;
+		timer.purge();
+	}
+	
 	/**
 	 * After using a given BLE device, the app must call this method to ensure
 	 * resources are released properly.
