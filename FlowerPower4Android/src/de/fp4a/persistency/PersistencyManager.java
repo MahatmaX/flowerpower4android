@@ -1,183 +1,169 @@
 package de.fp4a.persistency;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import android.content.Context;
-import android.util.Log;
 import de.fp4a.model.FlowerPower;
 import de.fp4a.timeseries.TimeSeriesModel;
-import de.fp4a.timeseries.dao.ITimeSeriesModelDAO;
-import de.fp4a.util.FlowerPowerConstants;
 
 public class PersistencyManager
 {
 	/** These Ids are used e.g. as filename identifier */
-	public final static String TIMESERIES_ID_TEMPERATURE	= "temperature";
-	public final static String TIMESERIES_ID_BATTERY		= "battery";
-	public final static String TIMESERIES_ID_SUNLIGHT		= "sunlight";
-	public final static String TIMESERIES_ID_SOILMOISTURE	= "soilmoisture";
+	public final static String TIMESERIES_TYPE_TEMPERATURE	= "temperature";
+	public final static String TIMESERIES_TYPE_BATTERY		= "battery";
+	public final static String TIMESERIES_TYPE_SUNLIGHT		= "sunlight";
+	public final static String TIMESERIES_TYPE_SOILMOISTURE	= "soilmoisture";
 	
 	private Timer timer;
+	private Map<String, TimerTask> timerTasks;
+	private Context context;
 	
-//	private LinkedList<Long> batteryLevelTimestamps;
-//	private LinkedList<Float> batteryLevelValues;
-//	
-//	private LinkedList<Long> temperatureTimestamps;
-//	private LinkedList<Float> temperatureValues;
-//	
-//	private LinkedList<Long> sunlightTimestamps;
-//	private LinkedList<Float> sunlightValues;
-//	
-//	private LinkedList<Long> soilMoistureTimestamps;
-//	private LinkedList<Float> soilMoistureValues;
+	private Map<String, TimeSeriesModel> seriesToBePersisted;
 	
-	private TimeSeriesModel batteryLevel;
-	private TimeSeriesModel sunlight;
-	private TimeSeriesModel temperature;
-	private TimeSeriesModel soilMoisture;
+	private static PersistencyManager instance;
 	
-	public PersistencyManager(Context context)
+	private PersistencyManager(Context context)
 	{
-//		batteryLevelTimestamps 	= new LinkedList<Long>();
-//		batteryLevelValues 		= new LinkedList<Float>();
-//		temperatureTimestamps 	= new LinkedList<Long>();
-//		temperatureValues 		= new LinkedList<Float>();
-//		sunlightTimestamps 		= new LinkedList<Long>();
-//		sunlightValues 			= new LinkedList<Float>();
-//		soilMoistureTimestamps 	= new LinkedList<Long>();
-//		soilMoistureValues 		= new LinkedList<Float>();
-		 
-		batteryLevel 	= new TimeSeriesModel(1000, ITimeSeriesModelDAO.INTERNAL, TIMESERIES_ID_BATTERY, context);
-		sunlight 		= new TimeSeriesModel(1000, ITimeSeriesModelDAO.INTERNAL, TIMESERIES_ID_SUNLIGHT, context);
-		temperature 	= new TimeSeriesModel(1000, ITimeSeriesModelDAO.INTERNAL, TIMESERIES_ID_TEMPERATURE, context);
-		soilMoisture 	= new TimeSeriesModel(1000, ITimeSeriesModelDAO.INTERNAL, TIMESERIES_ID_SOILMOISTURE, context);
+		seriesToBePersisted = new HashMap<String, TimeSeriesModel>();
+		timer = new Timer();
+		timerTasks = new HashMap<String, TimerTask>();
 		
+		this.context = context;
 	}
 	
-	public void enablePersistency(boolean enable, long period)
+	public static PersistencyManager getInstance(Context context)
 	{
-		if (enable)
-		{
-			timer = new Timer();
-			TimerTask timerTask = new TimerTask() {
-				public void run()
+		if (instance == null)
+			instance = new PersistencyManager(context);
+		
+		return instance;
+	}
+	
+	public void enablePersistency(long period, int maxListSize, String storageLocation, String seriesId)
+	{
+		enablePersistency(period, maxListSize, storageLocation, TIMESERIES_TYPE_BATTERY, seriesId);
+		enablePersistency(period, maxListSize, storageLocation, TIMESERIES_TYPE_SUNLIGHT, seriesId);
+		enablePersistency(period, maxListSize, storageLocation, TIMESERIES_TYPE_TEMPERATURE, seriesId);
+		enablePersistency(period, maxListSize, storageLocation, TIMESERIES_TYPE_SOILMOISTURE, seriesId);
+	}
+	
+	public void enablePersistency(long period, int maxListSize, String storageLocation, String seriesType, String seriesId)
+	{
+		final TimeSeriesModel timeSeries = create(maxListSize, storageLocation, seriesType, seriesId);
+		
+		TimerTask timerTask = new TimerTask() {
+			public void run()
+			{
+				try
 				{
-					try
-					{
-						persist();
-					}
-					catch (Exception e)
-					{
-						e.printStackTrace();
-					}
+					persist(timeSeries);
 				}
-			};
-			timer.schedule(timerTask, period, period);
-		}
-		else
-		{
-			timer.cancel();
-			timer.purge();
-			timer = null;
-		}
+				catch (Exception e)
+				{
+					e.printStackTrace();
+				}
+			}
+		};
+		timer.schedule(timerTask, period, period);
+		
+		seriesToBePersisted.put(seriesType + "_" + seriesId, timeSeries);
+		timerTasks.put(seriesType + "_" + seriesId, timerTask);
 	}
 	
-	public boolean isEnabled()
+	public void disablePersistency(String seriesId)
 	{
-		return timer != null;
+//		Iterator<String> iter = seriesToBePersisted.keySet().iterator();
+//		while (iter.hasNext())
+//		{
+//			String key = iter.next();
+//			String seriesType = key.substring(0, key.indexOf("_"));
+//			String seriesId = key.substring(key.indexOf("_") + 1);
+//			disablePersistency(seriesType, seriesId);
+//		}
+		disablePersistency(TIMESERIES_TYPE_BATTERY, seriesId);
+		disablePersistency(TIMESERIES_TYPE_SOILMOISTURE, seriesId);
+		disablePersistency(TIMESERIES_TYPE_SUNLIGHT, seriesId);
+		disablePersistency(TIMESERIES_TYPE_TEMPERATURE, seriesId);
 	}
 	
-	public synchronized void add(FlowerPower fp) throws Exception
+	public void disablePersistency(String seriesType, String seriesId)
 	{
-		if (fp.getBatteryLevelTimestamp() > 0) // add if set
+		String key = seriesType + "_" + seriesId;
+		try
 		{
-			batteryLevel.addMeasurement(fp.getBatteryLevelTimestamp(), (float)fp.getBatteryLevel());
-//			if (batteryLevelTimestamps.size() == 0) // add if list is empty
-//			{
-//				batteryLevelTimestamps.add(fp.getBatteryLevelTimestamp());
-//				batteryLevelValues.add((float)fp.getBatteryLevel());
-//			}
-//			else if (fp.getBatteryLevelTimestamp() > batteryLevelTimestamps.getLast()) // add only if newer
-//			{
-//				batteryLevelTimestamps.add(fp.getBatteryLevelTimestamp());
-//				batteryLevelValues.add((float)fp.getBatteryLevel());
-//			}
+			persist(seriesToBePersisted.get(key));
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		seriesToBePersisted.remove(key);
+		
+		TimerTask tt = timerTasks.remove(key);
+		tt.cancel();
+		timer.purge();
+	}
+	
+	public boolean isEnabled(String seriesType, String seriesId)
+	{
+		return seriesToBePersisted.containsKey(seriesType + "_" + seriesId);
+	}
+	
+	public boolean isEnabled(String seriesId)
+	{
+		return isEnabled(TIMESERIES_TYPE_BATTERY, seriesId) && isEnabled(TIMESERIES_TYPE_SOILMOISTURE, seriesId) &&
+			isEnabled(TIMESERIES_TYPE_SUNLIGHT, seriesId) && isEnabled(TIMESERIES_TYPE_TEMPERATURE, seriesId);
+	}
+	
+	public synchronized void addDataSet(FlowerPower fp, String seriesId) throws Exception
+	{
+		if ((fp.getBatteryLevelTimestamp() > 0) && isEnabled(TIMESERIES_TYPE_BATTERY, seriesId)) // add if set
+		{
+			seriesToBePersisted.get(TIMESERIES_TYPE_BATTERY + "_" + seriesId).addMeasurement(fp.getBatteryLevelTimestamp(), (float)fp.getBatteryLevel());
 		}
 		
-		if (fp.getTemperatureTimestamp() > 0) // add if set
+		if ((fp.getTemperatureTimestamp() > 0) && isEnabled(TIMESERIES_TYPE_TEMPERATURE, seriesId)) // add if set
 		{
-			temperature.addMeasurement(fp.getTemperatureTimestamp(), (float)fp.getTemperature());
-			
-//			if (temperatureTimestamps.size() == 0) // add if list is empty
-//			{
-//				temperatureTimestamps.add(fp.getTemperatureTimestamp());
-//				temperatureValues.add((float)fp.getTemperature());
-//			}
-//			else if (fp.getTemperatureTimestamp() > temperatureTimestamps.getLast()) // add only if newer
-//			{
-//				temperatureTimestamps.add(fp.getTemperatureTimestamp());
-//				temperatureValues.add((float)fp.getTemperature());
-//			}
+			seriesToBePersisted.get(TIMESERIES_TYPE_TEMPERATURE+ "_" + seriesId).addMeasurement(fp.getTemperatureTimestamp(), (float)fp.getTemperature());
 		}
 		
-		if (fp.getSunlightTimestamp() > 0) // add if set
+		if ((fp.getSunlightTimestamp() > 0) && isEnabled(TIMESERIES_TYPE_SUNLIGHT, seriesId)) // add if set
 		{
-			sunlight.addMeasurement(fp.getSunlightTimestamp(), (float)fp.getSunlight());
-			
-//			if (sunlightTimestamps.size() == 0) // add if list is empty
-//			{
-//				sunlightTimestamps.add(fp.getSunlightTimestamp());
-//				sunlightValues.add((float)fp.getSunlight());
-//			}
-//			else if (fp.getSunlightTimestamp() > sunlightTimestamps.getLast()) // add only if newer
-//			{
-//				sunlightTimestamps.add(fp.getSunlightTimestamp());
-//				sunlightValues.add((float)fp.getSunlight());
-//			}
+			seriesToBePersisted.get(TIMESERIES_TYPE_SUNLIGHT+ "_" + seriesId).addMeasurement(fp.getSunlightTimestamp(), (float)fp.getSunlight());
 		} 
 		
-		if (fp.getSoilMoistureTimestamp() > 0) // add if set
+		if ((fp.getSoilMoistureTimestamp() > 0) && isEnabled(TIMESERIES_TYPE_SOILMOISTURE, seriesId)) // add if set
 		{
-			soilMoisture.addMeasurement(fp.getSoilMoistureTimestamp(), (float)fp.getSoilMoisture());
-			
-//			if (soilMoistureTimestamps.size() == 0) // add if list is empty
-//			{
-//				soilMoistureTimestamps.add(fp.getSoilMoistureTimestamp());
-//				soilMoistureValues.add((float)fp.getSoilMoisture());
-//			}
-//			else if (fp.getSoilMoistureTimestamp() > soilMoistureTimestamps.getLast()) // add only if newer
-//			{
-//				soilMoistureTimestamps.add(fp.getSoilMoistureTimestamp());
-//				soilMoistureValues.add((float)fp.getSoilMoisture());
-//			}
+			seriesToBePersisted.get(TIMESERIES_TYPE_SOILMOISTURE + "_" + seriesId).addMeasurement(fp.getSoilMoistureTimestamp(), (float)fp.getSoilMoisture());
 		}
 	}
 	
-	private synchronized void persist() throws Exception
+	public TimeSeriesModel load(int maxHistorySize, String storageLocation, String seriesType, String seriesId) throws Exception
 	{
-		if (temperature.size() > 0)
+		TimeSeriesModel timeSeries = create(maxHistorySize, storageLocation, seriesType, seriesId);
+		timeSeries.load();
+		return timeSeries;
+	}
+	
+	public TimeSeriesModel create(int maxHistorySize, String storageLocation, String seriesType, String seriesId)
+	{
+		return new TimeSeriesModel(maxHistorySize, storageLocation, seriesType + "_" + seriesId, context);
+	}
+	
+	public void clear(String seriesType, String seriesId, String storageLocation)
+	{
+		create(Integer.MAX_VALUE, storageLocation, seriesType, seriesId).clearAll();
+	}
+	
+	private synchronized void persist(TimeSeriesModel timeSeries) throws Exception
+	{
+		if (timeSeries.size() > 0)
 		{
-			temperature.save(temperature.getTimestamps(), temperature.getValues(), true);
-			temperature.empty();
-		}
-		
-		if (batteryLevel.size() > 0)
-		{
-			batteryLevel.save(batteryLevel.getTimestamps(), batteryLevel.getValues(), true);
-			batteryLevel.empty();
-		}
-		
-		if (sunlight.size() > 0)
-		{
-			sunlight.save(sunlight.getTimestamps(), sunlight.getValues(), true);
-			sunlight.empty();
-		}
-		
-		if (soilMoisture.size() > 0)
-		{
-			soilMoisture.save(soilMoisture.getTimestamps(), soilMoisture.getValues(), true);
-			soilMoisture.empty();
+			timeSeries.save(timeSeries.getTimestamps(), timeSeries.getValues(), true);
+			timeSeries.empty();
 		}
 	}
 }

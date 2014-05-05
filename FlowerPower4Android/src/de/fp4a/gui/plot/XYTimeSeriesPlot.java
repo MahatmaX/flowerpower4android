@@ -15,6 +15,7 @@ import android.graphics.Paint;
 import android.graphics.Shader;
 import android.util.AttributeSet;
 
+import com.androidplot.Plot;
 import com.androidplot.xy.BoundaryMode;
 import com.androidplot.xy.LineAndPointFormatter;
 import com.androidplot.xy.XYPlot;
@@ -41,7 +42,9 @@ public class XYTimeSeriesPlot extends XYPlot
 		super(context, attrs, defStyle);
 	}
 
-	public void init(ITimeSeriesModel timeSeries, String title, int lowerRangeBoundary, int upperRangeBoundary)
+	public void init(ITimeSeriesModel timeSeries, String seriesTitle, int lowerRangeBoundary, int upperRangeBoundary, 
+			int gradientColorStart, int gradientColorEnd, int gradientEndCoordinateY,
+			int lineAndPointColor)
 	{
 		getLegendWidget().setVisible(false);
         getBackgroundPaint().setColor(Color.WHITE);
@@ -49,8 +52,8 @@ public class XYTimeSeriesPlot extends XYPlot
         getGraphWidget().getBackgroundPaint().setColor(Color.WHITE);
         getGraphWidget().getDomainLabelPaint().setColor(Color.BLACK);
         getGraphWidget().getRangeLabelPaint().setColor(Color.BLACK);
-//        getGraphWidget().setRangeLabelWidth(50.0f); // in order to fully display the range label, e.g. 1013.2
-//        getGraphWidget().setDomainLabelWidth(20.0f); // in order to fully display the domain label, e.g. 21.Jan
+        getGraphWidget().setRangeLabelWidth(30.0f); // in order to fully display the range label, e.g. 1013.2
+        getGraphWidget().setDomainLabelWidth(20.0f); // in order to fully display the domain label, e.g. 21.Jan
         
         getGraphWidget().getGridBackgroundPaint().setColor(Color.WHITE);
         getGraphWidget().getDomainGridLinePaint().setColor(Color.GRAY);
@@ -60,24 +63,24 @@ public class XYTimeSeriesPlot extends XYPlot
         getGraphWidget().getDomainOriginLinePaint().setColor(Color.GRAY);
         getGraphWidget().getRangeOriginLinePaint().setColor(Color.GRAY);
  
-//        plot.setBorderStyle(Plot.BorderStyle.SQUARE, null, null);
-//        plot.getBorderPaint().setStrokeWidth(1);
-//        plot.getBorderPaint().setAntiAlias(true);
-//        plot.getBorderPaint().setColor(Color.WHITE);
-// 
+        setBorderStyle(Plot.BorderStyle.SQUARE, null, null);
+        getBorderPaint().setStrokeWidth(1);
+        getBorderPaint().setAntiAlias(true);
+        getBorderPaint().setColor(Color.WHITE);
+ 
         Paint lineFill = new Paint();
         lineFill.setAlpha(80);
-       	lineFill.setShader(new LinearGradient(0, 0, 0, 500, Color.parseColor("#F8AB30"), Color.BLUE, Shader.TileMode.MIRROR));
+       	lineFill.setShader(new LinearGradient(0, 0, 0, gradientEndCoordinateY, gradientColorStart, gradientColorEnd, Shader.TileMode.MIRROR));
  
-        LineAndPointFormatter formatter  = new LineAndPointFormatter(Color.rgb(0,0,0), Color.BLACK, Color.BLACK, null); // line color, point color, fill color
-        formatter.setFillPaint(lineFill);        
+        LineAndPointFormatter formatter  = new LineAndPointFormatter(lineAndPointColor, lineAndPointColor, Color.WHITE, null); // line color, point color, fill color
+        formatter.setFillPaint(lineFill);
         
-        XYTimeSeries series = new XYTimeSeries(timeSeries, title);
+        XYTimeSeries series = new XYTimeSeries(timeSeries, seriesTitle);
         addSeries(series, formatter);
         
         setRangeBoundaries(lowerRangeBoundary, upperRangeBoundary, BoundaryMode.FIXED); 
         setDomainStep(XYStepMode.SUBDIVIDE, 10);
-        setRangeStep(XYStepMode.SUBDIVIDE, 10);
+        setRangeStep(XYStepMode.SUBDIVIDE, 11);
         
         getGraphWidget().getDomainLabelPaint().setTextSize(20); // 10 for Gio (320x480), 16 for Nexus Prime(720x1184)
         getGraphWidget().getRangeLabelPaint().setTextSize(20); // 10 for Gio(320x480), 16 for Nexus Prime(720x1184)

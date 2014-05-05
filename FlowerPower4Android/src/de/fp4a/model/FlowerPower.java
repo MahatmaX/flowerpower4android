@@ -4,7 +4,8 @@ import java.io.Serializable;
 
 public class FlowerPower implements Serializable
 {
-
+	/** ToDo: implement seriesId ? */
+	
 	private static final long serialVersionUID = 5156641917291655184L;
 
 	private int batteryLevel 	= -1;

@@ -38,11 +38,20 @@ public class FlowerPowerConstants
 	public final static String CHARACTERISTIC_UUID_SOIL_MOISTURE		= "39e1fa05-84a8-11e2-afba-0002a5d5c51b";
 	
 	/* 
-	 * Constant to be used to pass the device address between Activities via Intents. 
+	 * Constants to be used to pass the device address between Activities via Intents. 
 	 * Mainly because the device address is the key to get the corresponding service manager 
 	 */
 	public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
 	public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
+	
+	/*
+	 * Constants to be used to specify the storage location for time series.
+	 * Choose 'external' to store data on the SD card, 'internal' to store the data on the phone's internal storage 
+	 * and 'database' to store the data in a local SQlite database
+	 */
+	public final static String PERSISTENCY_STORAGE_LOCATION_EXTERNAL = "external";
+	public final static String PERSISTENCY_STORAGE_LOCATION_INTERNAL = "internal";
+	public final static String PERSISTENCY_STORAGE_LOCATION_DATABASE = "database";
 	
 	public static String getCharacteristicName(BluetoothGattCharacteristic characteristic, Context context)
 	{

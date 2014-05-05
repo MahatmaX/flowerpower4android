@@ -74,6 +74,8 @@ public class FlowerPowerActivity extends Activity
 		((TextView)findViewById(R.id.tv_soil_moisture_timestamp)).setText(Util.getHumanReadableTimestamp(fp.getSoilMoistureTimestamp(), false)+"");
 	}
 	
+	@Override
+	/** Called once the Activity is initially created */
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
@@ -109,12 +111,13 @@ public class FlowerPowerActivity extends Activity
 				device.notifyBatteryLevel(checkBox.isChecked());
 				
 				// once notifications are enabled, the persistency manager is also initialized in order to store all those values
-				serviceManager.enablePersistency(true, 5000);
+				serviceManager.enablePersistency(5000, 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL, "flowerpower4android");
 			}
 		});
 		
 		
 		serviceManager = FlowerPowerServiceManager.getInstance(deviceAddress, this);
+		
 		IFlowerPowerServiceListener serviceListener = new IFlowerPowerServiceListener() {
 			
 			public void deviceConnected()
@@ -180,6 +183,7 @@ public class FlowerPowerActivity extends Activity
 	}
 
 	@Override
+	/** Called once the Activity is visible after having been paused */
 	protected void onResume()
 	{
 		super.onResume();
@@ -188,6 +192,7 @@ public class FlowerPowerActivity extends Activity
 	}
 
 	@Override
+	/** Called once the Activity is no longer visible (e.g. because another Activity is now in the foreground) */
 	protected void onPause()
 	{
 		super.onPause();
@@ -196,10 +201,13 @@ public class FlowerPowerActivity extends Activity
 	}
 
 	@Override
+	/** Called once the Activity is finally being destroyed */
 	protected void onDestroy()
 	{
 		super.onDestroy();
 		Log.i(FlowerPowerConstants.TAG, "Activity.onDestroy() unbind serviceManager");
+		serviceManager.disablePersistency();
+		serviceManager.disconnect();
 		serviceManager.unbind(); 
 	}
 

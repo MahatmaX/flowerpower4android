@@ -1,10 +1,14 @@
 package de.fp4a.gui;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.view.Menu;
+import android.view.MenuItem;
 import de.fp4a.R;
 import de.fp4a.persistency.PersistencyManager;
+import de.fp4a.util.FlowerPowerConstants;
 
 public class FlowerPowerPlotActivity extends Activity
 {
@@ -15,22 +19,42 @@ public class FlowerPowerPlotActivity extends Activity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.flowerpower_plot);
 		
+		Intent intent = getIntent();
+		final String deviceName = intent.getStringExtra(FlowerPowerConstants.EXTRAS_DEVICE_NAME);
+		getActionBar().setTitle(deviceName);
+		
 		FlowerPowerPlotFragment fragment = (FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_temperature);
-		fragment.init(PersistencyManager.TIMESERIES_ID_TEMPERATURE, "Temperature", -10, 50);
+		fragment.init(PersistencyManager.TIMESERIES_TYPE_TEMPERATURE, "flowerpower4android", 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL, 
+				"Temperature", -10, 55, Color.RED, Color.WHITE, 200, Color.parseColor("#800000"));
 		
 		fragment = (FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_sunlight);
-		fragment.init(PersistencyManager.TIMESERIES_ID_SUNLIGHT, "Sunlight", 0, 10);
+		fragment.init(PersistencyManager.TIMESERIES_TYPE_SUNLIGHT, "flowerpower4android", 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL,
+				"Sunlight", 0, 20, Color.YELLOW, Color.WHITE, 200, Color.parseColor("#FFBA00"));
 		
 		fragment = (FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_soilmoisture);
-		fragment.init(PersistencyManager.TIMESERIES_ID_SOILMOISTURE, "Soil Moisture", 0, 100);
+		fragment.init(PersistencyManager.TIMESERIES_TYPE_SOILMOISTURE, "flowerpower4android", 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL,
+				"Soil Moisture", 0, 60, Color.GREEN, Color.WHITE, 200, Color.parseColor("#00C000"));
 	}
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu)
 	{
-		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.flowerpower_graph, menu);
 		return true;
+	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		switch (item.getItemId())
+		{
+			case R.id.menu_clear:
+				((FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_temperature)).clear();
+				((FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_sunlight)).clear();
+				((FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_soilmoisture)).clear();
+				return true;
+		}
+		return super.onOptionsItemSelected(item);
 	}
 
 }

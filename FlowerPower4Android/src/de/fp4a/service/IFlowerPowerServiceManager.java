@@ -4,7 +4,6 @@ package de.fp4a.service;
 
 public interface IFlowerPowerServiceManager
 {
-
 	public void bind();
 	public void unbind();
 	
@@ -14,10 +13,9 @@ public interface IFlowerPowerServiceManager
 	
 	public void pause();
 	
-	public void enablePersistency(boolean enable, long period);
+	public void enablePersistency(long period, int maxListSize, String storageLocation, String seriesId);
+	public void disablePersistency();
 	
 	public void addServiceListener(IFlowerPowerServiceListener listener);
 	public void removeServiceListener(IFlowerPowerServiceListener listener);
-	
-	
 }

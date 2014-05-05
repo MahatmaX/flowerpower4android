@@ -137,9 +137,14 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 		context.unregisterReceiver(serviceUpdateReceiver);
 	}
 
-	public void enablePersistency(boolean enable, long period)
+	public void enablePersistency(long period, int maxListSize, String storageLocation, String seriesId)
 	{
-		service.enablePersistency(enable, period);
+		service.enablePersistency(period, maxListSize, storageLocation, seriesId);
+	}
+
+	public void disablePersistency()
+	{
+		service.disablePersistency();
 	}
 	
 	public void addServiceListener(IFlowerPowerServiceListener listener)

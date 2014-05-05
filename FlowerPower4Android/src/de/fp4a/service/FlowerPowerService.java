@@ -47,12 +47,10 @@ import de.fp4a.util.ValueMapper;
  */
 public class FlowerPowerService extends Service implements IFlowerPowerDevice
 {
-	private final static String TAG = FlowerPowerService.class.getSimpleName();
-
-	private BluetoothManager mBluetoothManager;
-	private BluetoothAdapter mBluetoothAdapter;
-	private String mBluetoothDeviceAddress;
-	private BluetoothGatt mBluetoothGatt;
+	private BluetoothManager bluetoothManager;
+	private BluetoothAdapter bluetoothAdapter;
+	private String bluetoothDeviceAddress;
+	private BluetoothGatt bluetoothGatt;
 	private int mConnectionState = STATE_DISCONNECTED;
 
 	private static final int STATE_DISCONNECTED = 0;
@@ -69,48 +67,58 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	public final static String EXTRA_DATA_RAW = "de.fp4a.EXTRA_DATA_RAW";
 	public final static String EXTRA_DATA_MODEL = "de.fp4a.EXTRA_DATA_MODEL";
 
+	/** 
+	 * A service instance is responsible for exactly one Flower Power device.
+	 * But, the device can be moved from flower to flower, hence we may have different time series instances.
+	 * Each instance has it's own seriesId.
+	 */
+	private String seriesId;
+	
 	private FlowerPower flowerPower;
 	private FlowerPowerServiceQueue queue;
 	private PersistencyManager persistencyManager;
+	
 	private Timer timer;
+	private TimerTask timerTaskNotifySoilMoisture;
+	private TimerTask timerTaskNotifyBatteryLevel;
 	
 	// Implements callback methods for GATT events that the app cares about. For example,
 	// connection change and services discovered.
-	private final BluetoothGattCallback mGattCallback = new BluetoothGattCallback() {
+	private final BluetoothGattCallback gattCallback = new BluetoothGattCallback() {
 
 		public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState)
 		{
-			Log.i(TAG, "FlowerPowerService.onConnectionChange()");
+			Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onConnectionChange()");
 			
 			if (newState == BluetoothProfile.STATE_CONNECTED)
 			{
 				mConnectionState = STATE_CONNECTED;
 				broadcastUpdate(CONNECTED);
-				Log.i(TAG, "Connected to GATT server.");
+				Log.i(FlowerPowerConstants.TAG, "Connected to GATT server.");
 		
 				// Attempts to discover services after successful connection
-				mBluetoothGatt.discoverServices();
+				bluetoothGatt.discoverServices();
 				
 				flowerPower = new FlowerPower();
 			}
 			else if (newState == BluetoothProfile.STATE_DISCONNECTED)
 			{
 				mConnectionState = STATE_DISCONNECTED;
-				Log.i(TAG, "Disconnected from GATT server.");
+				Log.i(FlowerPowerConstants.TAG, "Disconnected from GATT server.");
 				broadcastUpdate(DISCONNECTED);
 			}
 		}
 
 		public void onServicesDiscovered(BluetoothGatt gatt, int status)
 		{
-			Log.i(TAG, "FlowerPowerService.onServicesDiscovered()");
+			Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onServicesDiscovered()");
 			if (status == BluetoothGatt.GATT_SUCCESS)
 			{
 				broadcastUpdate(SERVICES_DISCOVERED);
 			}
 			else
 			{
-				Log.w(TAG, "FlowerPowerService.onServicesDiscovered() not successful: received: " + status);
+				Log.w(FlowerPowerConstants.TAG, "FlowerPowerService.onServicesDiscovered() not successful: received: " + status);
 			}
 		}
 
@@ -120,11 +128,11 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			
 			if (status == BluetoothGatt.GATT_SUCCESS)
 			{
-				Log.i(TAG, "FlowerPowerService.onCharacteristicRead() success");
+//				Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onCharacteristicRead() success");
 				broadcastUpdate(DATA_AVAILABLE, characteristic);
 			}
 			else
-				Log.w(TAG, "FlowerPowerService.onCharacteristicRead() NO success");
+				Log.w(FlowerPowerConstants.TAG, "FlowerPowerService.onCharacteristicRead() NO success");
 		}
 
 		/**
@@ -132,7 +140,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		 */
 		public void onCharacteristicChanged(BluetoothGatt gatt, BluetoothGattCharacteristic characteristic)
 		{
-			Log.i(TAG, "FlowerPowerService.onCharacteristicChanged()");
+//			Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onCharacteristicChanged()");
 			broadcastUpdate(DATA_AVAILABLE, characteristic);
 		}
 		
@@ -144,10 +152,10 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			
 			if (status == BluetoothGatt.GATT_SUCCESS)
 			{
-				Log.i(TAG, "FlowerPowerService.onCharacteristicWrite() success");
+				Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onCharacteristicWrite() success");
 			}
 			else 
-				Log.w(TAG, "FlowerPowerService.onCharacteristicWrite() NO success");
+				Log.w(FlowerPowerConstants.TAG, "FlowerPowerService.onCharacteristicWrite() NO success");
 		}
 	};
 
@@ -250,7 +258,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		}
 		else
 		{
-			Log.w(TAG, "FlowerPowerService broadcastUpdate: unknown characterisitic: " + characteristic.getUuid().toString());
+			Log.w(FlowerPowerConstants.TAG, "FlowerPowerService broadcastUpdate: unknown characterisitic: " + characteristic.getUuid().toString());
 		}
 		
 		intent.putExtra(EXTRA_DATA_RAW, data);
@@ -264,8 +272,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		// persist measurements if persistency is enabled
 		try
 		{
-			if (persistencyManager.isEnabled())
-				persistencyManager.add(flowerPower);
+			if (persistencyManager.isEnabled(getSeriesId()))
+				persistencyManager.addDataSet(flowerPower, getSeriesId());
 		}
 		catch (Exception e)
 		{
@@ -287,7 +295,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	@Override
 	public void onCreate()
 	{
-		Log.i(TAG, "FlowerPowerService.onCreate()");
+		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onCreate()");
 		queue = new FlowerPowerServiceQueue(this);
 		timer = new Timer();
 	}
@@ -295,21 +303,21 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	@Override
 	public void onDestroy()
 	{
-		Log.i(TAG, "FlowerPowerService.onDestroy()");
+		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onDestroy()");
 		close();
 	}
 	
 	@Override
 	public IBinder onBind(Intent intent)
 	{
-		Log.i(TAG, "FlowerPowerService.onBind()");
+		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onBind()");
 		return mBinder;
 	}
 
 	@Override
 	public boolean onUnbind(Intent intent)
 	{
-		Log.i(TAG, "FlowerPowerService.onUnbind()");
+		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onUnbind()");
 		return super.onUnbind(intent);
 	}
 
@@ -323,24 +331,24 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	public boolean initialize()
 	{
 		// For API level 18 and above, get a reference to BluetoothAdapter through BluetoothManager.
-		if (mBluetoothManager == null)
+		if (bluetoothManager == null)
 		{
-			mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-			if (mBluetoothManager == null)
+			bluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+			if (bluetoothManager == null)
 			{
-				Log.e(TAG, "Unable to initialize BluetoothManager.");
+				Log.e(FlowerPowerConstants.TAG, "Unable to initialize BluetoothManager.");
 				return false;
 			}
 		}
 
-		mBluetoothAdapter = mBluetoothManager.getAdapter();
-		if (mBluetoothAdapter == null)
+		bluetoothAdapter = bluetoothManager.getAdapter();
+		if (bluetoothAdapter == null)
 		{
-			Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
+			Log.e(FlowerPowerConstants.TAG, "Unable to obtain a BluetoothAdapter.");
 			return false;
 		}
 
-		persistencyManager = new PersistencyManager(this);
+		persistencyManager = PersistencyManager.getInstance(this);
 		return true;
 	}
 
@@ -357,19 +365,19 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public boolean connect(final String address)
 	{
-		Log.i(TAG, "FlowerPowerService.connect() to " + address);
+		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.connect() to " + address);
 		
-		if (mBluetoothAdapter == null || address == null)
+		if (bluetoothAdapter == null || address == null)
 		{
-			Log.w(TAG, "BluetoothAdapter not initialized or unspecified address.");
+			Log.w(FlowerPowerConstants.TAG, "BluetoothAdapter not initialized or unspecified address.");
 			return false;
 		}
 
 		// Previously connected device. Try to reconnect.
-		if (mBluetoothDeviceAddress != null && address.equals(mBluetoothDeviceAddress) && mBluetoothGatt != null)
+		if (bluetoothDeviceAddress != null && address.equals(bluetoothDeviceAddress) && bluetoothGatt != null)
 		{
-			Log.d(TAG, "Trying to use an existing mBluetoothGatt for connection.");
-			if (mBluetoothGatt.connect())
+			Log.d(FlowerPowerConstants.TAG, "Trying to use an existing mBluetoothGatt for connection.");
+			if (bluetoothGatt.connect())
 			{
 				mConnectionState = STATE_CONNECTING;
 				return true;
@@ -380,16 +388,16 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			}
 		}
 
-		final BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+		final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
 		if (device == null)
 		{
-			Log.w(TAG, "Device not found.  Unable to connect.");
+			Log.w(FlowerPowerConstants.TAG, "Device not found.  Unable to connect.");
 			return false;
 		}
 		// We want to directly connect to the device, so we are setting the autoConnect parameter to false.
-		mBluetoothGatt = device.connectGatt(this, false, mGattCallback);
-		Log.d(TAG, "Trying to create a new connection.");
-		mBluetoothDeviceAddress = address;
+		bluetoothGatt = device.connectGatt(this, false, gattCallback);
+		Log.d(FlowerPowerConstants.TAG, "Trying to create a new connection.");
+		bluetoothDeviceAddress = address;
 		mConnectionState = STATE_CONNECTING;
 		return true;
 	}
@@ -402,14 +410,14 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void disconnect()
 	{
-		Log.i(TAG, "FlowerPowerService.disconnect()");
+		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.disconnect()");
 		
-		if (mBluetoothAdapter == null || mBluetoothGatt == null)
+		if (bluetoothAdapter == null || bluetoothGatt == null)
 		{
-			Log.w(TAG, "BluetoothAdapter not initialized");
+			Log.w(FlowerPowerConstants.TAG, "BluetoothAdapter not initialized");
 			return;
 		}
-		mBluetoothGatt.disconnect();
+		bluetoothGatt.disconnect();
 		
 		timer.cancel();
 	}
@@ -425,22 +433,28 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void close()
 	{
-		Log.i(TAG, "FlowerPowerService.close()");
+		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.close()");
 		
-		if (mBluetoothGatt == null)
+		if (bluetoothGatt == null)
 		{
 			return;
 		}
 		disconnect();
-		mBluetoothGatt.close();
-		mBluetoothGatt = null;
+		bluetoothGatt.close();
+		bluetoothGatt = null;
 	}
 	
-	public void enablePersistency(boolean enable, long period)
+	public void enablePersistency(long period, int maxListSize, String storageLocation, String seriesId)
 	{
-		persistencyManager.enablePersistency(enable, period);
+		this.seriesId = seriesId;
+		persistencyManager.enablePersistency(period, maxListSize, storageLocation, getSeriesId());
 	}
 
+	public void disablePersistency()
+	{
+		persistencyManager.disablePersistency(getSeriesId());
+	}
+	
 	/**
 	 * Request a read on a given {@code BluetoothGattCharacteristic}. The read result is reported asynchronously through the
 	 * {@code BluetoothGattCallback#onCharacteristicRead(android.bluetooth.BluetoothGatt, android.bluetooth.BluetoothGattCharacteristic, int)}
@@ -451,23 +465,23 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void readCharacteristic(BluetoothGattCharacteristic characteristic)
 	{
-		if (mBluetoothAdapter == null || mBluetoothGatt == null)
+		if (bluetoothAdapter == null || bluetoothGatt == null)
 		{
-			Log.w(TAG, "BluetoothAdapter not initialized");
+			Log.w(FlowerPowerConstants.TAG, "BluetoothAdapter not initialized");
 			return;
 		}
-		mBluetoothGatt.readCharacteristic(characteristic);
+		bluetoothGatt.readCharacteristic(characteristic);
 	}
 
 	public void writeCharacteristic(BluetoothGattCharacteristic characteristic)
 	{
 		// for enable live mode new Buffer([0x01] for disable new Buffer([0x00]
-		if (mBluetoothAdapter == null || mBluetoothGatt == null)
+		if (bluetoothAdapter == null || bluetoothGatt == null)
 		{
-			Log.w(TAG, "BluetoothAdapter not initialized");
+			Log.w(FlowerPowerConstants.TAG, "BluetoothAdapter not initialized");
 			return;
 		}
-		mBluetoothGatt.writeCharacteristic(characteristic);
+		bluetoothGatt.writeCharacteristic(characteristic);
 	}
 
 			
@@ -481,158 +495,164 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void setCharacteristicNotification(BluetoothGattCharacteristic characteristic, boolean enabled)
 	{
-		if (mBluetoothAdapter == null || mBluetoothGatt == null)
+		if (bluetoothAdapter == null || bluetoothGatt == null)
 		{
-			Log.w(TAG, "BluetoothAdapter not initialized");
+			Log.w(FlowerPowerConstants.TAG, "BluetoothAdapter not initialized");
 			return;
 		}
-		mBluetoothGatt.setCharacteristicNotification(characteristic, enabled);
+		bluetoothGatt.setCharacteristicNotification(characteristic, enabled);
 	}
 	
 	public BluetoothGattService getDeviceInformationService()
 	{
-		if (mBluetoothGatt == null)
+		if (bluetoothGatt == null)
 			return null;
 
-		BluetoothGattService b = mBluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_DEVICE_INFORMATION));
+		BluetoothGattService b = bluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_DEVICE_INFORMATION));
 		return b;
 	}
 	
 	public BluetoothGattService getBatteryService()
 	{
-		if (mBluetoothGatt == null)
+		if (bluetoothGatt == null)
 			return null;
 
-		BluetoothGattService b = mBluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_BATTERY_LEVEL));
+		BluetoothGattService b = bluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_BATTERY_LEVEL));
 		return b;
 	}
 
 	public BluetoothGattService getAdditionalInformationService()
 	{
-		if (mBluetoothGatt == null)
+		if (bluetoothGatt == null)
 			return null;
 
-		BluetoothGattService b = mBluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_ADDITIONAL_INFORMATION));
+		BluetoothGattService b = bluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_ADDITIONAL_INFORMATION));
 		return b;
 	}
 	
 	public BluetoothGattService getFlowerPowerService()
 	{
-		if (mBluetoothGatt == null)
+		if (bluetoothGatt == null)
 			return null;
 
-		BluetoothGattService b = mBluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_FLOWER_POWER));
+		BluetoothGattService b = bluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_FLOWER_POWER));
 		return b;
 	}
 	
 	public void readTemperature()
 	{
-		Log.i(TAG, "Read temperature");
+//		Log.i(FlowerPowerConstants.TAG, "Read temperature");
 		BluetoothGattCharacteristic chara = getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE));
 		queue.enqueueRead(chara);
 	}
 	
 	public void readSunlight()
 	{
-		Log.i(TAG, "Read sunlight");
+//		Log.i(FlowerPowerConstants.TAG, "Read sunlight");
 		BluetoothGattCharacteristic chara = getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT));
 		queue.enqueueRead(chara);
 	}
 	
 	public void readSoilMoisture()
 	{
-		Log.i(TAG, "Read soil moisture");
+//		Log.i(FlowerPowerConstants.TAG, "Read soil moisture");
 		BluetoothGattCharacteristic chara = getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SOIL_MOISTURE));
 		queue.enqueueRead(chara);
 	}
 	
 	public void readBatteryLevel()
 	{
-		Log.i(TAG, "Read battery");
+//		Log.i(FlowerPowerConstants.TAG, "Read battery");
 		BluetoothGattCharacteristic chara = getBatteryService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_BATTERY_LEVEL));
 		queue.enqueueRead(chara);
 	}
 	
 	public void readSystemId()
 	{
-		Log.i(TAG, "Read system id");
+//		Log.i(FlowerPowerConstants.TAG, "Read system id");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SYSTEM_ID));
 		queue.enqueueRead(chara);
 	}
 	
 	public void readModelNr()
 	{
-		Log.i(TAG, "Read model nr");
+//		Log.i(FlowerPowerConstants.TAG, "Read model nr");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_MODEL_NR));
 		queue.enqueueRead(chara);
 	}
 
 	public void readSerialNr()
 	{
-		Log.i(TAG, "Read serial nr");
+//		Log.i(FlowerPowerConstants.TAG, "Read serial nr");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SERIAL_NR));
 		queue.enqueueRead(chara);
 	}
 
 	public void readFirmwareRevision()
 	{
-		Log.i(TAG, "Read firmware rev");
+//		Log.i(FlowerPowerConstants.TAG, "Read firmware rev");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_FIRMWARE_REVISION));
 		queue.enqueueRead(chara);
 	}
 
 	public void readHardwareRevision()
 	{
-		Log.i(TAG, "Read hardware rev");
+//		Log.i(FlowerPowerConstants.TAG, "Read hardware rev");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_HARDWARE_REVISION));
 		queue.enqueueRead(chara);
 	}
 
 	public void readSoftwareRevision()
 	{
-		Log.i(TAG, "Read software rev");
+//		Log.i(FlowerPowerConstants.TAG, "Read software rev");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SOFTWARE_REVISION));
 		queue.enqueueRead(chara);
 	}
 
 	public void readManufacturerName()
 	{
-		Log.i(TAG, "Read manufacturer name");
+//		Log.i(FlowerPowerConstants.TAG, "Read manufacturer name");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_MANUFACTURER_NAME));
 		queue.enqueueRead(chara);
 	}
 
 	public void readCertData()
 	{
-		Log.i(TAG, "Read cert data");
+//		Log.i(FlowerPowerConstants.TAG, "Read cert data");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_CERT_DATA));
 		queue.enqueueRead(chara);
 	}
 
 	public void readPnpId()
 	{
-		Log.i(TAG, "Read pnp id");
+//		Log.i(FlowerPowerConstants.TAG, "Read pnp id");
 		BluetoothGattCharacteristic chara = getDeviceInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_PNP_ID));
 		queue.enqueueRead(chara);
 	}
 	
 	public void readFriendlyName()
 	{
-		Log.i(TAG, "Read friendly name");
+//		Log.i(FlowerPowerConstants.TAG, "Read friendly name");
 		BluetoothGattCharacteristic chara = getAdditionalInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_FRIENDLY_NAME));
 		queue.enqueueRead(chara);
 	}
 	
 	public void readColor()
 	{
-		Log.i(TAG, "Read color");
+//		Log.i(FlowerPowerConstants.TAG, "Read color");
 		BluetoothGattCharacteristic chara = getAdditionalInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_COLOR));
 		queue.enqueueRead(chara);
 	}
 	
+	/**
+	 * Enable notifications for some generic characteristic.
+	 * In order to enable notification for temperature, sunlight, soil moisture and battery see the corresponding methods.
+	 * @param characteristic  The characteristic to enable notifications for
+	 * @param enable  true to enable, false to disable
+	 */
 	public void notify(final BluetoothGattCharacteristic characteristic, final boolean enable)
 	{
-		Log.i(TAG, (enable ? "Enable" : "Disable") + " Notification for " + FlowerPowerConstants.getCharacteristicName(characteristic, this));
+		Log.i(FlowerPowerConstants.TAG, (enable ? "Enable" : "Disable") + " Notification for " + FlowerPowerConstants.getCharacteristicName(characteristic, this));
 		
 		UUID uuidLiveMode = UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_LIVE_MODE); // that's 39e1fa06-84a8-11e2-afba-0002a5d5c51b
 		
@@ -643,17 +663,28 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		setCharacteristicNotification(characteristic, enable); 
 	}
 	
+	/**
+	 * Enable notifications for temperature.
+	 * @param enable  true to enable, false to disable
+	 */
 	public void notifyTemperature(boolean enable)
 	{
 		queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE)), enable);
 	}
 	
+	/**
+	 * Enable notifications for sunlight.
+	 * @param enable  true to enable, false to disable
+	 */
 	public void notifySunlight(boolean enable)
 	{
 		queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT)), enable);
 	}
 	
-	private TimerTask timerTaskNotifySoilMoisture;
+	/**
+	 * Enable notifications for soil moisture.
+	 * @param enable  true to enable, false to disable
+	 */
 	public void notifySoilMoisture(boolean enable)
 	{
 		// for some reason, the 'classic' notification mechanism does not work for this characteristic
@@ -678,7 +709,10 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		}
 	}
 	
-	private TimerTask timerTaskNotifyBatteryLevel;
+	/**
+	 * Enable notifications for battery level.
+	 * @param enable  true to enable, false to disable
+	 */
 	public void notifyBatteryLevel(boolean enable)
 	{
 		// for some reason, the 'classic' notification mechanism does not work for this characteristic
@@ -701,5 +735,12 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			};
 			timer.schedule(timerTaskNotifyBatteryLevel, 0, 1000);
 		}
+	}
+	
+	private String getSeriesId()
+	{
+		if (seriesId == null)
+			return bluetoothDeviceAddress;
+		return seriesId;
 	}
 }

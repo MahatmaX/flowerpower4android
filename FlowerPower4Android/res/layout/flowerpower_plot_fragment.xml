@@ -2,13 +2,20 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:background="#fff">
+    android:background="#fff"  
+    android:orientation="vertical">
 
+    <TextView
+        android:id="@+id/plot_title"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:paddingTop="5dp"
+        android:gravity="center"
+        android:textSize="12sp"
+        android:textStyle="bold" />
+    
     <de.fp4a.gui.plot.XYTimeSeriesPlot
         android:id="@+id/plot"
         android:layout_width="fill_parent"
-        android:layout_height="fill_parent"
-        title="Test"
-        android:background="#fff" /> 
-
+        android:layout_height="fill_parent" />
 </LinearLayout>

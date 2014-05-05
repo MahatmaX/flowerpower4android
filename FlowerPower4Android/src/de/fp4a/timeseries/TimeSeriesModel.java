@@ -14,6 +14,8 @@ import de.fp4a.util.Util;
 
 public class TimeSeriesModel implements Serializable, ITimeSeriesModel
 {
+	private static final long serialVersionUID = 8754333652958394003L;
+	
 	private LinkedList<Long> timestamps;
 	private LinkedList<Float> values;
 	
@@ -23,12 +25,12 @@ public class TimeSeriesModel implements Serializable, ITimeSeriesModel
 	private static int maxListSize;
 	private double simplificationTolerance = 0.1;
 	
-	private ITimeSeriesModelDAO modelDAO;
+	private transient ITimeSeriesModelDAO modelDAO;
 	
 	/**
 	 * 
 	 * @param maxListSize
-	 * @param location  One of IMeasurementModelDAO.EXTERNAL, IMeasurementModelDAO.INTERNAL, IMeasurementModelDAO.SQLITE
+	 * @param location  One of FlowerPowerConstants.PERSISTENCY_XYZ
 	 * @param fileName  The name of the file/table in which data shall be stored
 	 * @param context  The context of the calling Activity, Service, Application etc.
 	 */
@@ -268,7 +270,7 @@ public class TimeSeriesModel implements Serializable, ITimeSeriesModel
 		modelDAO.save(timestamps, values, append);
 	}
 	
-	public synchronized void clearAll(Context context)
+	public synchronized void clearAll()
 	{
 		Log.i(FlowerPowerConstants.TAG, "Going to clear measurements ...");
 		
@@ -328,9 +330,9 @@ public class TimeSeriesModel implements Serializable, ITimeSeriesModel
 		}
 		
 		// create new DAO
-		if (storageLocation.equals(ITimeSeriesModelDAO.EXTERNAL))
+		if (storageLocation.equals(FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_EXTERNAL))
 			modelDAO = new TimeSeriesModelExternalStorageDAO(fileName, context);
-		else if (storageLocation.equals(ITimeSeriesModelDAO.INTERNAL))
+		else if (storageLocation.equals(FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL))
 			modelDAO = new TimeSeriesModelInternalStorageDAO(fileName, context);
 		else
 			modelDAO = new TimeSeriesModelSQLiteDAO(fileName, context);
