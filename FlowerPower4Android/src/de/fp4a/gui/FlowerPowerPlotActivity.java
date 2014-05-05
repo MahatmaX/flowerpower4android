@@ -26,10 +26,10 @@ public class FlowerPowerPlotActivity extends Activity
 		FlowerPowerPlotFragment fragment = (FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_temperature);
 		fragment.init(PersistencyManager.TIMESERIES_TYPE_TEMPERATURE, "flowerpower4android", 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL, 
 				"Temperature", -10, 55, Color.RED, Color.WHITE, 200, Color.parseColor("#800000"));
-		
+		 
 		fragment = (FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_sunlight);
 		fragment.init(PersistencyManager.TIMESERIES_TYPE_SUNLIGHT, "flowerpower4android", 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL,
-				"Sunlight", 0, 20, Color.YELLOW, Color.WHITE, 200, Color.parseColor("#FFBA00"));
+				"Sunlight", 0, 50, Color.YELLOW, Color.WHITE, 200, Color.parseColor("#FFBA00"));
 		
 		fragment = (FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_soilmoisture);
 		fragment.init(PersistencyManager.TIMESERIES_TYPE_SOILMOISTURE, "flowerpower4android", 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL,
