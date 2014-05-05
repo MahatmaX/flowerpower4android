@@ -16,6 +16,8 @@
 
 package de.fp4a.gui;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.app.ListActivity;
 import android.bluetooth.BluetoothAdapter;
@@ -35,14 +37,8 @@ import android.widget.BaseAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
-
-import java.util.ArrayList;
-
 import de.fp4a.R;
-import de.fp4a.R.id;
-import de.fp4a.R.layout;
-import de.fp4a.R.menu;
-import de.fp4a.R.string;
+import de.fp4a.util.FlowerPowerConstants;
 
 /**
  * Activity for scanning and displaying available Bluetooth LE devices.
@@ -176,8 +172,8 @@ public class DeviceScanActivity extends ListActivity
 		if (device == null)
 			return;
 		final Intent intent = new Intent(this, FlowerPowerActivity.class);
-		intent.putExtra(FlowerPowerActivity.EXTRAS_DEVICE_NAME, device.getName());
-		intent.putExtra(FlowerPowerActivity.EXTRAS_DEVICE_ADDRESS, device.getAddress());
+		intent.putExtra(FlowerPowerConstants.EXTRAS_DEVICE_NAME, device.getName());
+		intent.putExtra(FlowerPowerConstants.EXTRAS_DEVICE_ADDRESS, device.getAddress());
 		if (mScanning)
 		{
 			mBluetoothAdapter.stopLeScan(mLeScanCallback);

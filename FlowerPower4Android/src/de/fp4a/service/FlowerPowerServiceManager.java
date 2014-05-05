@@ -30,6 +30,8 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 	private Context context;
 	private String deviceAddress;
 	
+	private static FlowerPowerServiceManager singletonInstance;
+	
 	private FlowerPowerService service;
 	
 	private final ServiceConnection serviceConnection = new ServiceConnection() {
@@ -75,13 +77,20 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 		}
 	};
 	
-	public FlowerPowerServiceManager(String deviceAddress, Context context)
+	private FlowerPowerServiceManager(String deviceAddress, Context context)
 	{
 		this.deviceAddress = deviceAddress;
 		this.context = context;
 		this.listener = new ArrayList<IFlowerPowerServiceListener>();
 	}
 
+	public static FlowerPowerServiceManager getInstance(String deviceAddress, Context context)
+	{
+		if (singletonInstance == null)
+			singletonInstance = new FlowerPowerServiceManager(deviceAddress, context);
+		return singletonInstance;
+	}
+	
 	public void bind()
 	{
 		context.bindService(new Intent(context, FlowerPowerService.class), serviceConnection, Context.BIND_AUTO_CREATE);
@@ -128,6 +137,11 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 		context.unregisterReceiver(serviceUpdateReceiver);
 	}
 
+	public void enablePersistency(boolean enable, long period)
+	{
+		service.enablePersistency(enable, period);
+	}
+	
 	public void addServiceListener(IFlowerPowerServiceListener listener)
 	{
 		if (!this.listener.contains(listener))

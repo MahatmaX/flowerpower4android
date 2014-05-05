@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:baselineAligned="false"
+    android:background="#fff"
+    android:orientation="vertical" >
+
+    <fragment
+        android:id="@+id/frag_temperature"
+        android:name="de.fp4a.gui.FlowerPowerPlotFragment"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="0.33" 
+        android:background="#fff"/>
+
+    <fragment
+        android:id="@+id/frag_sunlight"
+        android:name="de.fp4a.gui.FlowerPowerPlotFragment"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="0.33" 
+        android:background="#fff"/> 
+    
+    <fragment
+        android:id="@+id/frag_soilmoisture"
+        android:name="de.fp4a.gui.FlowerPowerPlotFragment"
+        android:layout_width="fill_parent"
+        android:layout_height="fill_parent"
+        android:layout_weight="0.33" 
+        android:background="#fff"/> 
+    
+</LinearLayout>

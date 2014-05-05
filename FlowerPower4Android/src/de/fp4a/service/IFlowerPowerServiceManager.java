@@ -14,6 +14,8 @@ public interface IFlowerPowerServiceManager
 	
 	public void pause();
 	
+	public void enablePersistency(boolean enable, long period);
+	
 	public void addServiceListener(IFlowerPowerServiceListener listener);
 	public void removeServiceListener(IFlowerPowerServiceListener listener);
 	

@@ -20,12 +20,12 @@ public class FlowerPowerConstants
 	
 	 
 	
-	public final static String SERVICE_UUID_SOME_OTHER_SERVICE 			= "0000180f-0000-1000-8000-00805f9b34fb"; // e.g. for battery
+	public final static String SERVICE_UUID_BATTERY_LEVEL 				= "0000180f-0000-1000-8000-00805f9b34fb"; // e.g. for battery
 	public final static String CHARACTERISTIC_UUID_BATTERY_LEVEL		= "00002a19-0000-1000-8000-00805f9b34fb";
 	
 	
 	
-	public final static String SERVICE_UUID_SOME_OTHER_SERVICE_2 		= "39e1fe00-84a8-11e2-afba-0002a5d5c51b";
+	public final static String SERVICE_UUID_ADDITIONAL_INFORMATION 		= "39e1fe00-84a8-11e2-afba-0002a5d5c51b";
 	public final static String CHARACTERISTIC_UUID_FRIENDLY_NAME		= "39e1fe03-84a8-11e2-afba-0002a5d5c51b";
 	public final static String CHARACTERISTIC_UUID_COLOR	 			= "39e1fe04-84a8-11e2-afba-0002a5d5c51b";
 	
@@ -37,6 +37,12 @@ public class FlowerPowerConstants
 	public final static String CHARACTERISTIC_UUID_TEMPERATURE 			= "39e1fa04-84a8-11e2-afba-0002a5d5c51b";
 	public final static String CHARACTERISTIC_UUID_SOIL_MOISTURE		= "39e1fa05-84a8-11e2-afba-0002a5d5c51b";
 	
+	/* 
+	 * Constant to be used to pass the device address between Activities via Intents. 
+	 * Mainly because the device address is the key to get the corresponding service manager 
+	 */
+	public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
+	public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
 	
 	public static String getCharacteristicName(BluetoothGattCharacteristic characteristic, Context context)
 	{

@@ -25,6 +25,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.CheckBox;
+import android.widget.ImageButton;
 import android.widget.TextView;
 import de.fp4a.R;
 import de.fp4a.model.FlowerPower;
@@ -43,9 +44,6 @@ import de.fp4a.util.Util;
  */
 public class FlowerPowerActivity extends Activity
 {
-	public static final String EXTRAS_DEVICE_NAME = "DEVICE_NAME";
-	public static final String EXTRAS_DEVICE_ADDRESS = "DEVICE_ADDRESS";
-
 	private IFlowerPowerServiceManager serviceManager;
 	private IFlowerPowerDevice device;
 	
@@ -76,7 +74,6 @@ public class FlowerPowerActivity extends Activity
 		((TextView)findViewById(R.id.tv_soil_moisture_timestamp)).setText(Util.getHumanReadableTimestamp(fp.getSoilMoistureTimestamp(), false)+"");
 	}
 	
-	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
@@ -84,11 +81,22 @@ public class FlowerPowerActivity extends Activity
 		
 		setContentView(R.layout.flowerpower_main);
 
-		final Intent intent = getIntent();
-		String deviceName = intent.getStringExtra(EXTRAS_DEVICE_NAME);
-		String deviceAddress = intent.getStringExtra(EXTRAS_DEVICE_ADDRESS);
+		Intent intent = getIntent();
+		final String deviceName = intent.getStringExtra(FlowerPowerConstants.EXTRAS_DEVICE_NAME);
+		final String deviceAddress = intent.getStringExtra(FlowerPowerConstants.EXTRAS_DEVICE_ADDRESS);
 
 		getActionBar().setTitle(deviceName);
+		final ImageButton graphButton = (ImageButton)findViewById(R.id.btn_graph);
+		graphButton.setOnClickListener(new OnClickListener() {
+			public void onClick(View v)
+			{
+				Intent i = new Intent(FlowerPowerActivity.this, FlowerPowerPlotActivity.class);
+				i.putExtra(FlowerPowerConstants.EXTRAS_DEVICE_ADDRESS, deviceAddress);
+				i.putExtra(FlowerPowerConstants.EXTRAS_DEVICE_NAME, deviceName);
+				startActivity(i);
+			}
+		});
+		
 		final CheckBox checkBox = (CheckBox)findViewById(R.id.checkbox_notifications);
 		checkBox.setOnClickListener(new OnClickListener() {
 			public void onClick(View v)
@@ -99,11 +107,14 @@ public class FlowerPowerActivity extends Activity
 				device.notifySunlight(checkBox.isChecked());
 				device.notifySoilMoisture(checkBox.isChecked());
 				device.notifyBatteryLevel(checkBox.isChecked());
+				
+				// once notifications are enabled, the persistency manager is also initialized in order to store all those values
+				serviceManager.enablePersistency(true, 5000);
 			}
 		});
 		
 		
-		serviceManager = new FlowerPowerServiceManager(deviceAddress, this);
+		serviceManager = FlowerPowerServiceManager.getInstance(deviceAddress, this);
 		IFlowerPowerServiceListener serviceListener = new IFlowerPowerServiceListener() {
 			
 			public void deviceConnected()
@@ -181,7 +192,7 @@ public class FlowerPowerActivity extends Activity
 	{
 		super.onPause();
 		Log.i(FlowerPowerConstants.TAG, "Activity.onPause() pause serviceManager");
-		serviceManager.pause();
+//		serviceManager.pause(); // serviceManager will not receive further updates
 	}
 
 	@Override
@@ -189,7 +200,7 @@ public class FlowerPowerActivity extends Activity
 	{
 		super.onDestroy();
 		Log.i(FlowerPowerConstants.TAG, "Activity.onDestroy() unbind serviceManager");
-		serviceManager.unbind();
+		serviceManager.unbind(); 
 	}
 
 	@Override

@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="de.fp4a"
     android:versionCode="1"
@@ -28,6 +29,7 @@
             </intent-filter>
         </activity>
         <activity android:name="de.fp4a.gui.FlowerPowerActivity" />
+        <activity android:name="de.fp4a.gui.FlowerPowerPlotActivity" />
 
         <service
             android:name="de.fp4a.service.FlowerPowerService"

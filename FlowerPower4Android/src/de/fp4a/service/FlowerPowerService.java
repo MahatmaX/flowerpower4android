@@ -36,6 +36,7 @@ import android.os.IBinder;
 import android.util.Log;
 import de.fp4a.model.FlowerPower;
 import de.fp4a.model.FlowerPowerMetadata.FlowerPowerColors;
+import de.fp4a.persistency.PersistencyManager;
 import de.fp4a.util.FlowerPowerConstants;
 import de.fp4a.util.Util;
 import de.fp4a.util.ValueMapper;
@@ -70,6 +71,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 
 	private FlowerPower flowerPower;
 	private FlowerPowerServiceQueue queue;
+	private PersistencyManager persistencyManager;
 	private Timer timer;
 	
 	// Implements callback methods for GATT events that the app cares about. For example,
@@ -259,6 +261,17 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			intent.putExtra(EXTRA_DATA_STRING, new String(data) + "\n" + Util.data2hex(data));
 		}
 		
+		// persist measurements if persistency is enabled
+		try
+		{
+			if (persistencyManager.isEnabled())
+				persistencyManager.add(flowerPower);
+		}
+		catch (Exception e)
+		{
+			e.printStackTrace();
+		}
+		
 		// inform all broadcast receivers
 		sendBroadcast(intent);
 	}
@@ -327,6 +340,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			return false;
 		}
 
+		persistencyManager = new PersistencyManager(this);
 		return true;
 	}
 
@@ -421,6 +435,11 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		mBluetoothGatt.close();
 		mBluetoothGatt = null;
 	}
+	
+	public void enablePersistency(boolean enable, long period)
+	{
+		persistencyManager.enablePersistency(enable, period);
+	}
 
 	/**
 	 * Request a read on a given {@code BluetoothGattCharacteristic}. The read result is reported asynchronously through the
@@ -479,21 +498,21 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		return b;
 	}
 	
-	public BluetoothGattService getSomeOtherService()
+	public BluetoothGattService getBatteryService()
 	{
 		if (mBluetoothGatt == null)
 			return null;
 
-		BluetoothGattService b = mBluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_SOME_OTHER_SERVICE));
+		BluetoothGattService b = mBluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_BATTERY_LEVEL));
 		return b;
 	}
 
-	public BluetoothGattService getSomeOtherService2()
+	public BluetoothGattService getAdditionalInformationService()
 	{
 		if (mBluetoothGatt == null)
 			return null;
 
-		BluetoothGattService b = mBluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_SOME_OTHER_SERVICE_2));
+		BluetoothGattService b = mBluetoothGatt.getService(UUID.fromString(FlowerPowerConstants.SERVICE_UUID_ADDITIONAL_INFORMATION));
 		return b;
 	}
 	
@@ -530,7 +549,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	public void readBatteryLevel()
 	{
 		Log.i(TAG, "Read battery");
-		BluetoothGattCharacteristic chara = getSomeOtherService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_BATTERY_LEVEL));
+		BluetoothGattCharacteristic chara = getBatteryService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_BATTERY_LEVEL));
 		queue.enqueueRead(chara);
 	}
 	
@@ -600,14 +619,14 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	public void readFriendlyName()
 	{
 		Log.i(TAG, "Read friendly name");
-		BluetoothGattCharacteristic chara = getSomeOtherService2().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_FRIENDLY_NAME));
+		BluetoothGattCharacteristic chara = getAdditionalInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_FRIENDLY_NAME));
 		queue.enqueueRead(chara);
 	}
 	
 	public void readColor()
 	{
 		Log.i(TAG, "Read color");
-		BluetoothGattCharacteristic chara = getSomeOtherService2().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_COLOR));
+		BluetoothGattCharacteristic chara = getAdditionalInformationService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_COLOR));
 		queue.enqueueRead(chara);
 	}
 	

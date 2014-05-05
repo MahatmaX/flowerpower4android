@@ -8,16 +8,16 @@ public class FlowerPower implements Serializable
 	private static final long serialVersionUID = 5156641917291655184L;
 
 	private int batteryLevel 	= -1;
-	private long batteryLevelTimestamp;
+	private long batteryLevelTimestamp = -1;
 	
 	private double temperature	= -1;
-	private long temperatureTimestamp;
+	private long temperatureTimestamp = -1;
 	
 	private double soilMoisture	= -1;
-	private long soilMoistureTimestamp;
+	private long soilMoistureTimestamp = -1;
 	
 	private double sunlight 	= -1;
-	private long sunlightTimestamp;
+	private long sunlightTimestamp = -1;
 	
 	private FlowerPowerMetadata metadata;
 	
