@@ -48,7 +48,7 @@
 				<table>
 					<tr>
 						<td>
-							<a href="#">Tutorial</a> <small>(soon to come)</small>
+							<a href="tutorial.php">Tutorial</a> <small>(soon to come)</small>
 						</td>
 					</tr>
 					<tr>

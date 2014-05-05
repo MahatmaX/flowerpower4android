@@ -10,12 +10,28 @@
 			<ul>
 				<li> Easy to use framework to control the Flower Power </li>
 				<li> Framework is 100% pure Java and easily extendable </li>
-				<li>Transparent access to sensor readings (without having to know Bluetooth LE specifics)
+				<li> 
+					Transparent access to sensor readings (without having to know Bluetooth LE specifics)
 					<ul>
 						<li>SystemId, ModelNr, SerialNr, Firmware/Hardware/Software Revision, Manufacturer Name, Certificate Data, PnP-Id, Friendly Name, Color</li>
 	  					<li>Readings AND Notifications for Temperature, Soil Moisture, Sunlight, Battery Level</li>
 					</ul>
-				<li> More to come :-) </li>
+				</li>
+				<li> 
+					Advanced Persistency Options 
+					<ul>
+						<li>Save time series with individual IDs (e.g. for every plant in contrast to every Flower Power sensor)</li>
+						<li>Storage options: internal storage, SD card or Android's SQlite database</li>
+						<li>Automatically smooth and compact time series by applying reduction algorithms (e.g. Douglas-Peucker-Ramer)</li>
+					</ul>
+				</li>
+				<li> 
+					Plot Support
+					<ul>
+						<li>Draw individual time series on nice plots</li>
+						<li>Ready-to-use plot fragment for easy UI integration</li>
+					</ul>
+				</li>
 			</ul>
 			
 			<p>
@@ -27,8 +43,9 @@
 			<p>
 			<center>
 				<img src="images/screenshot.png" alt="Screenshot of the Flower Power for Android Example App">
+				<img src="images/screenshot2.png" alt="Screenshot of the Flower Power for Android Example App">
 				<br>
-				Screenshot of the Example App for the <i>Flower Power for Android Library</i>
+				Screenshots of the Example App for the <i>Flower Power for Android</i> Library
 			</center>
 		</td>
 		<td valign="top" width="300">
