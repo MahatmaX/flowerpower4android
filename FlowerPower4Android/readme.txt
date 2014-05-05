@@ -10,7 +10,13 @@ It's main features are:
 * Transparent access to sensor readings (without having to know Bluetooth LE specifics)
   - SystemId, ModelNr, SerialNr, Firmware/Hardware/Software Revision, Manufacturer Name, Certificate Data, PnP-Id, Friendly Name, Color
   - Readings AND Notifications for Temperature, Soil Moisture, Sunlight, Battery Level
-* More to come :-)
+* Advanced Persistency Options
+  - Save time series with individual IDs (e.g. for every plant in contrast to every Flower Power sensor)
+  - Storage options: internal storage, SD card or Android's SQlite database
+  - Automatically smooth and compact time series by applying reduction algorithms (e.g. Douglas-Peucker-Ramer)
+* Plot Support
+  - Draw individual time series on nice plots
+  - Ready-to-use plot fragment for easy UI integration
 
 For further information, documentation and tutorials please see
 http://vsis-www.informatik.uni-hamburg.de/oldServer/teaching//projects/flowerpower4android/index.php
