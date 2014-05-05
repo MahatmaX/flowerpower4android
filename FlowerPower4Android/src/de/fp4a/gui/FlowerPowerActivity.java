@@ -29,6 +29,7 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 import de.fp4a.R;
 import de.fp4a.model.FlowerPower;
+import de.fp4a.service.BluetoothDeviceModel;
 import de.fp4a.service.FlowerPowerServiceManager;
 import de.fp4a.service.IFlowerPowerDevice;
 import de.fp4a.service.IFlowerPowerServiceListener;
@@ -120,10 +121,17 @@ public class FlowerPowerActivity extends Activity
 		
 		IFlowerPowerServiceListener serviceListener = new IFlowerPowerServiceListener() {
 			
+			public void deviceDiscovered(BluetoothDeviceModel device)
+			{
+				Log.i(FlowerPowerConstants.TAG, "Activity.serviceListener() device discovered: " + device);
+			}
+			
 			public void deviceConnected()
 			{
 				Log.i(FlowerPowerConstants.TAG, "Activity.serviceListener() device connected");
 				invalidateOptionsMenu();
+				
+				serviceManager.enableAutoConnect(1000 * 60 * 10); // 10 mins
 			}
 			
 			public void deviceDisconnected()
@@ -170,8 +178,9 @@ public class FlowerPowerActivity extends Activity
 			
 			public void serviceDisconnected() { Log.i(FlowerPowerConstants.TAG, "Activity.serviceListener() service disconnected");/* does not neccessarily need to be handled */ }				
 			
-			public void serviceFailed()
+			public void serviceFailed(RuntimeException exc)
 			{
+				exc.printStackTrace();
 				Log.e(FlowerPowerConstants.TAG, "Activity.serviceListener() service failed -> finish");
 				finish();
 			}
@@ -206,9 +215,8 @@ public class FlowerPowerActivity extends Activity
 	{
 		super.onDestroy();
 		Log.i(FlowerPowerConstants.TAG, "Activity.onDestroy() unbind serviceManager");
-		serviceManager.disablePersistency();
-		serviceManager.disconnect();
-		serviceManager.unbind(); 
+		
+		serviceManager.destroy(); // disconnect, shutdown service, free all resources.
 	}
 
 	@Override

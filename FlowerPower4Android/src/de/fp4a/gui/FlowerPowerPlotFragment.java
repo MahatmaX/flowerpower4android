@@ -12,6 +12,7 @@ import de.fp4a.R;
 import de.fp4a.gui.plot.XYTimeSeriesPlot;
 import de.fp4a.model.FlowerPower;
 import de.fp4a.persistency.PersistencyManager;
+import de.fp4a.service.BluetoothDeviceModel;
 import de.fp4a.service.FlowerPowerServiceManager;
 import de.fp4a.service.IFlowerPowerDevice;
 import de.fp4a.service.IFlowerPowerServiceListener;
@@ -37,9 +38,10 @@ public class FlowerPowerPlotFragment extends Fragment
 	 */
 	private IFlowerPowerServiceListener serviceListener = new IFlowerPowerServiceListener() {
 		
-		public void serviceFailed() { }
+		public void serviceFailed(RuntimeException extra) { }
 		public void serviceDisconnected() { }
 		public void serviceConnected() { }
+		public void deviceDiscovered(BluetoothDeviceModel device) { }
 		public void deviceReady(IFlowerPowerDevice device) { }
 		public void deviceDisconnected() { }
 		public void deviceConnected() { }
@@ -66,6 +68,7 @@ public class FlowerPowerPlotFragment extends Fragment
 				e.printStackTrace();
 			}
 		}
+		
 	};
 	
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
