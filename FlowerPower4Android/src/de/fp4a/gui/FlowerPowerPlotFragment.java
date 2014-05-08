@@ -1,5 +1,7 @@
 package de.fp4a.gui;
 
+import com.androidplot.xy.BoundaryMode;
+
 import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
@@ -59,6 +61,10 @@ public class FlowerPowerPlotFragment extends Fragment
 				else
 					Log.w(FlowerPowerConstants.TAG, "FlowerPowerPlotFragment: Unknown series type: " + seriesType + ". Cannot update view.");
 				
+//				System.out.println("Timeseries low=" + timeSeries.getLowestValue() + " high=" + timeSeries.getHighestValue());
+//				
+//				plot.setRangeBoundaries(timeSeries.getLowestValue() - (timeSeries.getLowestValue() / 10), 
+//						timeSeries.getHighestValue() + (timeSeries.getHighestValue() / 10), BoundaryMode.FIXED);
 				plot.redraw();
 			}
 			catch (Exception e)

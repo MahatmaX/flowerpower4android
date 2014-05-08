@@ -669,7 +669,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void notifyTemperature(boolean enable)
 	{
-		queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE)), enable);
+		if (isConnected())
+			queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE)), enable);
 	}
 	
 	/**
@@ -678,7 +679,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void notifySunlight(boolean enable)
 	{
-		queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT)), enable);
+		if (isConnected())
+			queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT)), enable);
 	}
 	
 	/**
@@ -697,7 +699,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			timer.purge();
 		}
 		
-		if (enable) // create and schedule a new task if required
+		if (enable && isConnected()) // create and schedule a new task if required
 		{
 			timerTaskNotifySoilMoisture = new TimerTask() {
 				public void run()
@@ -725,7 +727,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			timer.purge();
 		}
 		
-		if (enable) // create and schedule a new task if required
+		if (enable && isConnected()) // create and schedule a new task if required
 		{
 			timerTaskNotifyBatteryLevel = new TimerTask() {
 				public void run()

@@ -52,7 +52,7 @@ public class XYTimeSeriesPlot extends XYPlot
         getGraphWidget().getBackgroundPaint().setColor(Color.WHITE);
         getGraphWidget().getDomainLabelPaint().setColor(Color.BLACK);
         getGraphWidget().getRangeLabelPaint().setColor(Color.BLACK);
-        getGraphWidget().setRangeLabelWidth(30.0f); // in order to fully display the range label, e.g. 1013.2
+        getGraphWidget().setRangeLabelWidth(45.0f); // in order to fully display the range label, e.g. 1013.2
         getGraphWidget().setDomainLabelWidth(20.0f); // in order to fully display the domain label, e.g. 21.Jan
         
         getGraphWidget().getGridBackgroundPaint().setColor(Color.WHITE);
@@ -86,7 +86,7 @@ public class XYTimeSeriesPlot extends XYPlot
         getGraphWidget().getRangeLabelPaint().setTextSize(20); // 10 for Gio(320x480), 16 for Nexus Prime(720x1184)
         
         NumberFormat nf = NumberFormat.getNumberInstance();
-		nf.setMaximumFractionDigits(2);
+		nf.setMaximumFractionDigits(1);
 		setRangeValueFormat(nf);
 		
 		setDomainValueFormat(new Format() {

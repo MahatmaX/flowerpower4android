@@ -19,8 +19,8 @@ public class TimeSeriesModel implements Serializable, ITimeSeriesModel
 	private LinkedList<Long> timestamps;
 	private LinkedList<Float> values;
 	
-	private static float lowestValue = -1;
-	private static float highestValue = 0;
+	private static float lowestValue = 1999;
+	private static float highestValue = -1999;
 	
 	private static int maxListSize;
 	private double simplificationTolerance = 0.1;
@@ -310,8 +310,8 @@ public class TimeSeriesModel implements Serializable, ITimeSeriesModel
 		timestamps.clear();
 		values.clear();
 		
-		lowestValue = -1999;
-		highestValue = 1999;
+		lowestValue = 1999;
+		highestValue = -1999;
 	}
 	
 	/**
