@@ -78,9 +78,15 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	private FlowerPowerServiceQueue queue;
 	private PersistencyManager persistencyManager;
 	
-	private Timer timer;
+	private Timer timerNotify;
+	private Timer timerReconnect;
 	private TimerTask timerTaskNotifySoilMoisture;
 	private TimerTask timerTaskNotifyBatteryLevel;
+	private TimerTask timerTaskReconnect;
+	private boolean notifyBatteryLevel; // used for reconnect
+	private boolean notifySunlight; // used for reconnect
+	private boolean notifySoilMoisture; // used for reconnect
+	private boolean notifyTemperature; // used for reconnect
 	
 	// Implements callback methods for GATT events that the app cares about. For example,
 	// connection change and services discovered.
@@ -115,6 +121,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			if (status == BluetoothGatt.GATT_SUCCESS)
 			{
 				broadcastUpdate(SERVICES_DISCOVERED);
+				
+				queue.resume(); // upon disconnection, the queue-head might still be pending, hence upon (re-)connection check if the queue contains more jobs
 			}
 			else
 			{
@@ -297,7 +305,6 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	{
 		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.onCreate()");
 		queue = new FlowerPowerServiceQueue(this);
-		timer = new Timer();
 	}
 	
 	@Override
@@ -361,7 +368,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 * @return Return true if the connection is initiated successfully. The
 	 *         connection result is reported asynchronously through the
 	 *         {@code BluetoothGattCallback#onConnectionStateChange(android.bluetooth.BluetoothGatt, int, int)}
-	 *         callback.
+	 *         callback. 
 	 */
 	public boolean connect(final String address)
 	{
@@ -399,6 +406,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		Log.d(FlowerPowerConstants.TAG, "Trying to create a new connection.");
 		bluetoothDeviceAddress = address;
 		mConnectionState = STATE_CONNECTING;
+		
+		timerNotify = new Timer();
 		return true;
 	}
 
@@ -419,7 +428,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		}
 		bluetoothGatt.disconnect();
 		
-		timer.cancel();
+		timerNotify.cancel();
 	}
 	
 	public boolean isConnected()
@@ -455,6 +464,40 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		persistencyManager.disablePersistency(getSeriesId());
 	}
 	
+	public void enableReconnect(long period)
+	{
+		timerReconnect = new Timer();
+		timerTaskReconnect = new TimerTask() {
+			public void run()
+			{
+				if (!isConnected())
+				{
+					Log.i(FlowerPowerConstants.TAG, "Try to reconnect ...");
+					connect(bluetoothDeviceAddress);
+					
+					// re-schedule notifications after 10secs (gives time for the connection to be established) 
+					timerReconnect.schedule(new TimerTask() {
+						public void run()
+						{
+							Log.d(FlowerPowerConstants.TAG, "Try to re-subscribe notifications...");
+							if (notifyBatteryLevel) notifyBatteryLevel(true);
+							if (notifyTemperature) notifyTemperature(true);
+							if (notifySoilMoisture) notifySoilMoisture(true);
+							if (notifySunlight) notifySunlight(true);
+						}
+					}, 10000);
+				}
+			}
+		};
+		timerReconnect.schedule(timerTaskReconnect, period, period);
+	}
+
+	public void disableReconnect()
+	{
+		timerReconnect.cancel();
+		timerReconnect = null;
+	}
+	
 	/**
 	 * Request a read on a given {@code BluetoothGattCharacteristic}. The read result is reported asynchronously through the
 	 * {@code BluetoothGattCallback#onCharacteristicRead(android.bluetooth.BluetoothGatt, android.bluetooth.BluetoothGattCharacteristic, int)}
@@ -470,7 +513,8 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			Log.w(FlowerPowerConstants.TAG, "BluetoothAdapter not initialized");
 			return;
 		}
-		bluetoothGatt.readCharacteristic(characteristic);
+		Log.w(FlowerPowerConstants.TAG, "Read characteristic " + characteristic);
+		bluetoothGatt.readCharacteristic(characteristic); 
 	}
 
 	public void writeCharacteristic(BluetoothGattCharacteristic characteristic)
@@ -669,6 +713,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void notifyTemperature(boolean enable)
 	{
+		notifyTemperature = enable;
 		if (isConnected())
 			queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE)), enable);
 	}
@@ -679,6 +724,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public void notifySunlight(boolean enable)
 	{
+		notifySunlight = enable;
 		if (isConnected())
 			queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT)), enable);
 	}
@@ -696,8 +742,10 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		{
 			timerTaskNotifySoilMoisture.cancel();
 			timerTaskNotifySoilMoisture = null;
-			timer.purge();
+			timerNotify.purge();
 		}
+		
+		notifySoilMoisture = enable;
 		
 		if (enable && isConnected()) // create and schedule a new task if required
 		{
@@ -707,7 +755,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 					readSoilMoisture();
 				} 
 			};
-			timer.schedule(timerTaskNotifySoilMoisture, 0, 1000);
+			timerNotify.schedule(timerTaskNotifySoilMoisture, 0, 1000);
 		}
 	}
 	
@@ -724,8 +772,10 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		{
 			timerTaskNotifyBatteryLevel.cancel();
 			timerTaskNotifyBatteryLevel = null;
-			timer.purge();
+			timerNotify.purge();
 		}
+		
+		notifyBatteryLevel = enable;
 		
 		if (enable && isConnected()) // create and schedule a new task if required
 		{
@@ -735,7 +785,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 					readBatteryLevel();
 				}
 			};
-			timer.schedule(timerTaskNotifyBatteryLevel, 0, 1000);
+			timerNotify.schedule(timerTaskNotifyBatteryLevel, 0, 1000);
 		}
 	}
 	

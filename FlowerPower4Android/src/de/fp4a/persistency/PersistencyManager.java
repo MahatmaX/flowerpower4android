@@ -122,22 +122,26 @@ public class PersistencyManager
 	{
 		if ((fp.getBatteryLevelTimestamp() > 0) && isEnabled(TIMESERIES_TYPE_BATTERY, seriesId)) // add if set
 		{
-			seriesToBePersisted.get(TIMESERIES_TYPE_BATTERY + "_" + seriesId).addMeasurement(fp.getBatteryLevelTimestamp(), (float)fp.getBatteryLevel());
+			if (fp.getBatteryLevel() >= 0)
+				seriesToBePersisted.get(TIMESERIES_TYPE_BATTERY + "_" + seriesId).addMeasurement(fp.getBatteryLevelTimestamp(), (float)fp.getBatteryLevel());
 		}
 		
 		if ((fp.getTemperatureTimestamp() > 0) && isEnabled(TIMESERIES_TYPE_TEMPERATURE, seriesId)) // add if set
 		{
-			seriesToBePersisted.get(TIMESERIES_TYPE_TEMPERATURE+ "_" + seriesId).addMeasurement(fp.getTemperatureTimestamp(), (float)fp.getTemperature());
+			if (fp.getTemperature() != -1)
+				seriesToBePersisted.get(TIMESERIES_TYPE_TEMPERATURE+ "_" + seriesId).addMeasurement(fp.getTemperatureTimestamp(), (float)fp.getTemperature());
 		}
 		
 		if ((fp.getSunlightTimestamp() > 0) && isEnabled(TIMESERIES_TYPE_SUNLIGHT, seriesId)) // add if set
 		{
-			seriesToBePersisted.get(TIMESERIES_TYPE_SUNLIGHT+ "_" + seriesId).addMeasurement(fp.getSunlightTimestamp(), (float)fp.getSunlight());
+			if (fp.getSunlight() >= 0)
+				seriesToBePersisted.get(TIMESERIES_TYPE_SUNLIGHT+ "_" + seriesId).addMeasurement(fp.getSunlightTimestamp(), (float)fp.getSunlight());
 		} 
 		
 		if ((fp.getSoilMoistureTimestamp() > 0) && isEnabled(TIMESERIES_TYPE_SOILMOISTURE, seriesId)) // add if set
 		{
-			seriesToBePersisted.get(TIMESERIES_TYPE_SOILMOISTURE + "_" + seriesId).addMeasurement(fp.getSoilMoistureTimestamp(), (float)fp.getSoilMoisture());
+			if (fp.getSoilMoisture() >= 0)
+				seriesToBePersisted.get(TIMESERIES_TYPE_SOILMOISTURE + "_" + seriesId).addMeasurement(fp.getSoilMoistureTimestamp(), (float)fp.getSoilMoisture());
 		}
 	}
 	

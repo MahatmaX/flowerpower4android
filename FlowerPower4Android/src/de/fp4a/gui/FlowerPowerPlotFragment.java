@@ -54,17 +54,27 @@ public class FlowerPowerPlotFragment extends Fragment
 			try
 			{ 
 				if (seriesType.equals(PersistencyManager.TIMESERIES_TYPE_TEMPERATURE))
-					timeSeries.addMeasurement(fp.getTemperatureTimestamp(), (float)fp.getTemperature());
+				{
+					if (fp.getTemperature() != -1)
+						timeSeries.addMeasurement(fp.getTemperatureTimestamp(), (float)fp.getTemperature());
+				}
 				else if (seriesType.equals(PersistencyManager.TIMESERIES_TYPE_SUNLIGHT))
-					timeSeries.addMeasurement(fp.getSunlightTimestamp(), (float)fp.getSunlight());
+				{
+					if (fp.getSunlight() >= 0)
+						timeSeries.addMeasurement(fp.getSunlightTimestamp(), (float)fp.getSunlight());
+				}
 				else if (seriesType.equals(PersistencyManager.TIMESERIES_TYPE_SOILMOISTURE))
-					timeSeries.addMeasurement(fp.getSoilMoistureTimestamp(), (float)fp.getSoilMoisture());
+				{
+					if (fp.getSoilMoisture() >= 0)
+						timeSeries.addMeasurement(fp.getSoilMoistureTimestamp(), (float)fp.getSoilMoisture());
+				}
 				else if (seriesType.equals(PersistencyManager.TIMESERIES_TYPE_BATTERY))
-					timeSeries.addMeasurement(fp.getBatteryLevelTimestamp(), (float)fp.getBatteryLevelTimestamp());
+				{
+					if (fp.getBatteryLevel() >= 0)
+						timeSeries.addMeasurement(fp.getBatteryLevelTimestamp(), (float)fp.getBatteryLevelTimestamp());
+				}
 				else
 					Log.w(FlowerPowerConstants.TAG, "FlowerPowerPlotFragment: Unknown series type: " + seriesType + ". Cannot update view.");
-				
-				Log.d(FlowerPowerConstants.TAG, "SeriesType=" + seriesType + " Timeseries low=" + timeSeries.getLowestValue() + " high=" + timeSeries.getHighestValue());
 				
 				if ( (timeSeries.getLowestValue() != oldLowest) || (timeSeries.getHighestValue() != oldHighest))
 					plot.setRangeBoundaries(timeSeries.getLowestValue() - (timeSeries.getLowestValue() / 10), 

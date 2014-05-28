@@ -1,5 +1,6 @@
 package de.fp4a.service;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Queue;
 
@@ -21,14 +22,24 @@ public class FlowerPowerServiceQueue
 	
 	public synchronized void enqueueRead(BluetoothGattCharacteristic chara)
 	{
-		queue.offer(new QueueJob(chara, QueueJob.JOB_TYPE_READ));
+		// ToDo: do not enqueue tasks twice and upon reconnection check queue
+		// ToDo: check, somehow queue-size exceeded 30 jobs (how?) and resume has not been called upon reconnect (if out of reach).
+		Log.d(FlowerPowerConstants.TAG, "Queue-Size= " + queue.size() + " Enqueue " + chara);
+		
+		QueueJob job = new QueueJob(chara, QueueJob.JOB_TYPE_READ);
+		if (!isContained(job))
+			queue.offer(job);
+		
 		if (queue.size() == 1) // if that's the only element in the queue we can immediately start to read
 			service.readCharacteristic(chara);
 	}
 	
 	public synchronized void enqueueNotify(BluetoothGattCharacteristic chara, boolean enable)
 	{
-		queue.offer(new QueueJob(chara, QueueJob.JOB_TYPE_NOTIFY, enable));
+		QueueJob job = new QueueJob(chara, QueueJob.JOB_TYPE_NOTIFY, enable);
+		if (!isContained(job))
+			queue.offer(job);
+		
 		if (queue.size() == 1) // if that's the only element in the queue we can immediately start to register notify
 			service.notify(chara, enable);
 	}
@@ -41,15 +52,7 @@ public class FlowerPowerServiceQueue
 		{
 			queue.remove();
 		
-			if (queue.size() > 0) // execute one more if 'jobs' are contained in the queue
-			{
-				head = queue.peek(); // new head
-				
-				if (head.jobType == QueueJob.JOB_TYPE_READ)
-					service.readCharacteristic(head.chara);
-				else if (head.jobType == QueueJob.JOB_TYPE_NOTIFY)
-					service.notify(head.chara, head.enable);
-			}
+			resume(); // process further jobs (if any)
 		}
 		else
 			Log.w(FlowerPowerConstants.TAG, "Attention: queue order corrupted ! chara=" + chara.getUuid() + " queue="+ queue);
@@ -66,20 +69,36 @@ public class FlowerPowerServiceQueue
 			Log.i(FlowerPowerConstants.TAG, "Queue: dequeue head");
 			queue.remove();
 		
-			if (queue.size() > 0) // execute one more if 'jobs' are contained in the queue
-			{
-				Log.i(FlowerPowerConstants.TAG, "Queue: process further ");
-				
-				head = queue.peek(); // new head
-				
-				if (head.jobType == QueueJob.JOB_TYPE_READ)
-					service.readCharacteristic(head.chara);
-				else if (head.jobType == QueueJob.JOB_TYPE_NOTIFY)
-					service.notify(head.chara, head.enable);
-			}
+			resume(); // process further jobs (if any)
 		}
 		else
 			Log.w(FlowerPowerConstants.TAG, "Attention: queue order corrupted ! chara=" + chara.getUuid() + " queue="+ queue);
+	}
+	
+	public void resume()
+	{
+		if (queue.size() > 0) // execute one more if 'jobs' are contained in the queue
+		{
+			Log.i(FlowerPowerConstants.TAG, "Queue: process further ");
+			
+			QueueJob head = queue.peek(); // new head
+			
+			if (head.jobType == QueueJob.JOB_TYPE_READ)
+				service.readCharacteristic(head.chara);
+			else if (head.jobType == QueueJob.JOB_TYPE_NOTIFY)
+				service.notify(head.chara, head.enable);
+		}
+	}
+	
+	private boolean isContained(QueueJob job)
+	{
+		Iterator<QueueJob> iter = queue.iterator();
+		while (iter.hasNext())
+		{
+			if (job.equals(iter.next()))
+				return true;
+		}
+		return false;
 	}
 	
 	class QueueJob
@@ -89,7 +108,7 @@ public class FlowerPowerServiceQueue
 		
 		BluetoothGattCharacteristic chara;
 		int jobType;
-		boolean enable;
+		boolean enable; // indicates if a notification shall be enabled or disabled
 		
 		public QueueJob(BluetoothGattCharacteristic chara, int jobType)
 		{
@@ -104,9 +123,52 @@ public class FlowerPowerServiceQueue
 		}
 
 		@Override
+		public int hashCode()
+		{
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getOuterType().hashCode();
+			result = prime * result + ((chara == null) ? 0 : chara.hashCode());
+			result = prime * result + (enable ? 1231 : 1237);
+			result = prime * result + jobType;
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj)
+		{
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			QueueJob other = (QueueJob) obj;
+			if (!getOuterType().equals(other.getOuterType()))
+				return false;
+			if (chara == null)
+			{
+				if (other.chara != null)
+					return false;
+			}
+			else if (!chara.equals(other.chara))
+				return false;
+			if (enable != other.enable)
+				return false;
+			if (jobType != other.jobType)
+				return false;
+			return true;
+		}
+
+		@Override
 		public String toString()
 		{
 			return "QueueJob [chara=" + (chara == null ? null : chara.getUuid()) + ", jobType=" + jobType + "]";
+		}
+
+		private FlowerPowerServiceQueue getOuterType()
+		{
+			return FlowerPowerServiceQueue.this;
 		}
 	}
 }

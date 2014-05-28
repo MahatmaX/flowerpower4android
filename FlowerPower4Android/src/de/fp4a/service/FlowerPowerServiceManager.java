@@ -147,6 +147,16 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 		service.disablePersistency();
 	}
 	
+	public void enableReconnect(long period)
+	{
+		service.enableReconnect(period);
+	}
+
+	public void disableReconnect()
+	{
+		service.disableReconnect();
+	}
+	
 	public void addServiceListener(IFlowerPowerServiceListener listener)
 	{
 		if (!this.listener.contains(listener))

@@ -91,7 +91,7 @@ public class XYTimeSeriesPlot extends XYPlot
 		
 		setDomainValueFormat(new Format() {
         	
-        	private SimpleDateFormat format = new SimpleDateFormat("HH:mm dd.MMM");
+        	private SimpleDateFormat format = new SimpleDateFormat("HH:mm, dd.MMM");
         	
         	public StringBuffer format(Object obj, StringBuffer toAppendTo, FieldPosition pos)
     		{
