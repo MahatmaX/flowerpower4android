@@ -78,8 +78,8 @@ public class XYTimeSeriesPlot extends XYPlot
         XYTimeSeries series = new XYTimeSeries(timeSeries, seriesTitle);
         addSeries(series, formatter);
         
-        setRangeBoundaries(lowerRangeBoundary, upperRangeBoundary, BoundaryMode.FIXED); 
-        setDomainStep(XYStepMode.SUBDIVIDE, 10);
+        setRangeBoundaries(lowerRangeBoundary, upperRangeBoundary, BoundaryMode.FIXED);
+        setDomainStep(XYStepMode.SUBDIVIDE, 8);
         setRangeStep(XYStepMode.SUBDIVIDE, 11);
         
         getGraphWidget().getDomainLabelPaint().setTextSize(20); // 10 for Gio (320x480), 16 for Nexus Prime(720x1184)
@@ -91,14 +91,13 @@ public class XYTimeSeriesPlot extends XYPlot
 		
 		setDomainValueFormat(new Format() {
         	
-        	private SimpleDateFormat formatDay = new SimpleDateFormat("dd.MMM");
-        	private SimpleDateFormat formatHour = new SimpleDateFormat("HH:mm:ss");
+        	private SimpleDateFormat format = new SimpleDateFormat("HH:mm dd.MMM");
         	
         	public StringBuffer format(Object obj, StringBuffer toAppendTo, FieldPosition pos)
     		{
     			long timestamp = ((Number) obj).longValue();
     			Date date = new Date(timestamp);
-    			return formatHour.format(date, toAppendTo, pos);
+    			return format.format(date, toAppendTo, pos);
     		}
 
     		public Object parseObject(String source, ParsePosition pos) { return null; }

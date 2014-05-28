@@ -19,8 +19,8 @@ public class TimeSeriesModel implements Serializable, ITimeSeriesModel
 	private LinkedList<Long> timestamps;
 	private LinkedList<Float> values;
 	
-	private static float lowestValue = 1999;
-	private static float highestValue = -1999;
+	private float lowestValue = 1999;
+	private float highestValue = -1999;
 	
 	private static int maxListSize;
 	private double simplificationTolerance = 0.1;
@@ -71,22 +71,24 @@ public class TimeSeriesModel implements Serializable, ITimeSeriesModel
 		// synchronize ! Let's imagine we get a new sensor value every second, but compaction requires 2 seconds, 
 		// we will end up compacting endlessly, because every new arriving sensor value calls compaction again !
 		
-		if (timestamps.size() == 0) // add if list is empty
+		// plausibility check:
+		// drop values, which are 100 times higher than the last value measured within less than 1.2 seconds
+		if ((timestamps.size() > 0) && (timestamp - 1200 < timestamps.getLast()) && (value > values.getLast() * 100))
+		{
+			Log.w(FlowerPowerConstants.TAG, "Drop unplausible value " + value + " (reference value " + values.getLast() + " from " + Util.getHumanReadableTimestamp(timestamps.getLast(), true) + ")");
+			return;
+		}
+		
+		if ((timestamps.size() == 0) || (timestamp > timestamps.getLast())) // add only if newer or if list is empty
 		{
 			timestamps.addLast(timestamp);
 			values.addLast(value);
 		}
-		else if (timestamp > timestamps.getLast()) // add only if newer
-		{
-			timestamps.addLast(timestamp);
-			values.addLast(value);
-		}
-		else
-			return; // add nothing
+		else return; // add nothing
 		
 		if (value < lowestValue)
 			lowestValue = value;
-		else if (value > highestValue)
+		if (value > highestValue)
 			highestValue = value;
 		
 		if (size() > maxListSize)
@@ -96,7 +98,7 @@ public class TimeSeriesModel implements Serializable, ITimeSeriesModel
 		}
 	}
 	
-	private synchronized static void recalculateLowestAndHighestValue(LinkedList<Float> values)
+	private synchronized void recalculateLowestAndHighestValue(LinkedList<Float> values)
 	{
 		lowestValue = 1999;
 		highestValue = -1999;

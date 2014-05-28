@@ -47,6 +47,9 @@ public class FlowerPowerPlotFragment extends Fragment
 		public void deviceConnected() { }
 		public void dataAvailable(FlowerPower fp)
 		{
+			float oldLowest = timeSeries.getLowestValue();
+			float oldHighest = timeSeries.getHighestValue();
+			
 			// depending on the kind of time series, add the corresponding timestamp and value and simply redraw the plot
 			try
 			{ 
@@ -61,10 +64,12 @@ public class FlowerPowerPlotFragment extends Fragment
 				else
 					Log.w(FlowerPowerConstants.TAG, "FlowerPowerPlotFragment: Unknown series type: " + seriesType + ". Cannot update view.");
 				
-//				System.out.println("Timeseries low=" + timeSeries.getLowestValue() + " high=" + timeSeries.getHighestValue());
-//				
-//				plot.setRangeBoundaries(timeSeries.getLowestValue() - (timeSeries.getLowestValue() / 10), 
-//						timeSeries.getHighestValue() + (timeSeries.getHighestValue() / 10), BoundaryMode.FIXED);
+				Log.d(FlowerPowerConstants.TAG, "SeriesType=" + seriesType + " Timeseries low=" + timeSeries.getLowestValue() + " high=" + timeSeries.getHighestValue());
+				
+				if ( (timeSeries.getLowestValue() != oldLowest) || (timeSeries.getHighestValue() != oldHighest))
+					plot.setRangeBoundaries(timeSeries.getLowestValue() - (timeSeries.getLowestValue() / 10), 
+							timeSeries.getHighestValue() + (timeSeries.getHighestValue() / 10), BoundaryMode.FIXED);
+				
 				plot.redraw();
 			}
 			catch (Exception e)
@@ -106,15 +111,12 @@ public class FlowerPowerPlotFragment extends Fragment
 	 * @param maxHistorySize  The max. history size (required for loading or creating a time series)
 	 * @param storageLocation  The location where the history is stored (required for loading a time series)
 	 * @param plotTitle  The title that shall be shown above the plot
-	 * @param plotLowerRangeBounday  The lower boundary of possible values
-	 * @param plotUpperRangeBoundary  The upper boundary of possible values
 	 * @param gradientColorStart  The start color of the gradient to fill the plot
 	 * @param gradientColorEnd  The end color of the gradient to fill the plot
 	 * @param gradientEndCoordinateY  The pixel y-index where the color gradient shall end (and be mirrored)
 	 * @param lineAndPointColor  The color of the line and all points
 	 */
-	public void init(String seriesType, String seriesId, int maxHistorySize, String storageLocation,
-			String plotTitle, int plotLowerRangeBounday, int plotUpperRangeBoundary,
+	public void init(String seriesType, String seriesId, int maxHistorySize, String storageLocation, String plotTitle, 
 			int gradientColorStart, int gradientColorEnd, int gradientEndCoordinateY,
 			int lineAndPointColor)
 	{
@@ -138,7 +140,10 @@ public class FlowerPowerPlotFragment extends Fragment
 		title.setText(plotTitle);
 		
 		plot = (XYTimeSeriesPlot) getView().findViewById(R.id.plot);
-		plot.init(timeSeries, plotTitle, plotLowerRangeBounday, plotUpperRangeBoundary, 
+
+		// init plot with auto-scale boundaries (10% upper and lower padding)
+		plot.init(timeSeries, plotTitle, (int)(timeSeries.getLowestValue() - (timeSeries.getLowestValue() / 10)), 
+				(int)(timeSeries.getHighestValue() + (timeSeries.getHighestValue() / 10)),
 				gradientColorStart, gradientColorEnd, gradientEndCoordinateY,
 				lineAndPointColor);
 	}

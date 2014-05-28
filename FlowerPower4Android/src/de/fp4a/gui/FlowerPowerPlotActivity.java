@@ -25,15 +25,15 @@ public class FlowerPowerPlotActivity extends Activity
 		
 		FlowerPowerPlotFragment fragment = (FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_temperature);
 		fragment.init(PersistencyManager.TIMESERIES_TYPE_TEMPERATURE, "flowerpower4android", 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL, 
-				"Temperature", -10, 55, Color.RED, Color.WHITE, 200, Color.parseColor("#800000"));
+				"Temperature", Color.RED, Color.WHITE, 200, Color.parseColor("#800000"));
 		 
 		fragment = (FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_sunlight);
 		fragment.init(PersistencyManager.TIMESERIES_TYPE_SUNLIGHT, "flowerpower4android", 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL,
-				"Sunlight", 0, 50, Color.YELLOW, Color.WHITE, 200, Color.parseColor("#FFBA00"));
+				"Sunlight", Color.YELLOW, Color.WHITE, 200, Color.parseColor("#FFBA00"));
 		
 		fragment = (FlowerPowerPlotFragment) getFragmentManager().findFragmentById(R.id.frag_soilmoisture);
 		fragment.init(PersistencyManager.TIMESERIES_TYPE_SOILMOISTURE, "flowerpower4android", 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL,
-				"Soil Moisture", 0, 60, Color.GREEN, Color.WHITE, 200, Color.parseColor("#00C000"));
+				"Soil Moisture", Color.GREEN, Color.WHITE, 200, Color.parseColor("#00C000"));
 	}
 
 	@Override
