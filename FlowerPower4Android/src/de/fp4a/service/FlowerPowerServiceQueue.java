@@ -36,6 +36,8 @@ public class FlowerPowerServiceQueue
 	
 	public synchronized void enqueueNotify(BluetoothGattCharacteristic chara, boolean enable)
 	{
+		Log.d(FlowerPowerConstants.TAG, "Queue-Size= " + queue.size() + " Notify " + chara + " enable");
+		
 		QueueJob job = new QueueJob(chara, QueueJob.JOB_TYPE_NOTIFY, enable);
 		if (!isContained(job))
 			queue.offer(job);
@@ -151,7 +153,7 @@ public class FlowerPowerServiceQueue
 				if (other.chara != null)
 					return false;
 			}
-			else if (!chara.equals(other.chara))
+			else if (!chara.getUuid().equals(other.chara.getUuid()))
 				return false;
 			if (enable != other.enable)
 				return false;

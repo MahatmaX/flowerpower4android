@@ -464,7 +464,11 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 		persistencyManager.disablePersistency(getSeriesId());
 	}
 	
-	public void enableReconnect(long period)
+	/**
+	 * Enables reconnect. If the bluetooth device is out of reach, then an automatic reconnect is tried periodically
+	 * @param period  Period in ms.
+	 */
+	public void enableReconnect(final long period)
 	{
 		timerReconnect = new Timer();
 		timerTaskReconnect = new TimerTask() {
@@ -485,7 +489,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 							if (notifySoilMoisture) notifySoilMoisture(true);
 							if (notifySunlight) notifySunlight(true);
 						}
-					}, 10000);
+					}, period);
 				}
 			}
 		};
