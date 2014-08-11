@@ -17,8 +17,10 @@ public interface IFlowerPowerServiceManager
 	public void enablePersistency(long period, int maxListSize, String storageLocation, String seriesId);
 	public void disablePersistency();
 	
-	public void enableAutoConnect(long period);
-	public void disableAutoConnect();
+
+	public void enableReconnect(long period);
+	public void disableReconnect();
+
 	
 	public void addServiceListener(IFlowerPowerServiceListener listener);
 	public void removeServiceListener(IFlowerPowerServiceListener listener);

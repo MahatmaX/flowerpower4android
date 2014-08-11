@@ -1,5 +1,7 @@
 package de.fp4a.gui;
 
+import com.androidplot.xy.BoundaryMode;
+
 import android.app.Fragment;
 import android.content.Intent;
 import android.os.Bundle;
@@ -47,19 +49,38 @@ public class FlowerPowerPlotFragment extends Fragment
 		public void deviceConnected() { }
 		public void dataAvailable(FlowerPower fp)
 		{
+			float oldLowest = timeSeries.getLowestValue();
+			float oldHighest = timeSeries.getHighestValue();
+			
 			// depending on the kind of time series, add the corresponding timestamp and value and simply redraw the plot
 			try
 			{ 
 				if (seriesType.equals(PersistencyManager.TIMESERIES_TYPE_TEMPERATURE))
-					timeSeries.addMeasurement(fp.getTemperatureTimestamp(), (float)fp.getTemperature());
+				{
+					if (fp.getTemperature() != -1)
+						timeSeries.addMeasurement(fp.getTemperatureTimestamp(), (float)fp.getTemperature());
+				}
 				else if (seriesType.equals(PersistencyManager.TIMESERIES_TYPE_SUNLIGHT))
-					timeSeries.addMeasurement(fp.getSunlightTimestamp(), (float)fp.getSunlight());
+				{
+					if (fp.getSunlight() >= 0)
+						timeSeries.addMeasurement(fp.getSunlightTimestamp(), (float)fp.getSunlight());
+				}
 				else if (seriesType.equals(PersistencyManager.TIMESERIES_TYPE_SOILMOISTURE))
-					timeSeries.addMeasurement(fp.getSoilMoistureTimestamp(), (float)fp.getSoilMoisture());
+				{
+					if (fp.getSoilMoisture() >= 0)
+						timeSeries.addMeasurement(fp.getSoilMoistureTimestamp(), (float)fp.getSoilMoisture());
+				}
 				else if (seriesType.equals(PersistencyManager.TIMESERIES_TYPE_BATTERY))
-					timeSeries.addMeasurement(fp.getBatteryLevelTimestamp(), (float)fp.getBatteryLevelTimestamp());
+				{
+					if (fp.getBatteryLevel() >= 0)
+						timeSeries.addMeasurement(fp.getBatteryLevelTimestamp(), (float)fp.getBatteryLevelTimestamp());
+				}
 				else
 					Log.w(FlowerPowerConstants.TAG, "FlowerPowerPlotFragment: Unknown series type: " + seriesType + ". Cannot update view.");
+				
+				if ( (timeSeries.getLowestValue() != oldLowest) || (timeSeries.getHighestValue() != oldHighest))
+					plot.setRangeBoundaries(timeSeries.getLowestValue() - (timeSeries.getLowestValue() / 10), 
+							timeSeries.getHighestValue() + (timeSeries.getHighestValue() / 10), BoundaryMode.FIXED);
 				
 				plot.redraw();
 			}
@@ -103,15 +124,12 @@ public class FlowerPowerPlotFragment extends Fragment
 	 * @param maxHistorySize  The max. history size (required for loading or creating a time series)
 	 * @param storageLocation  The location where the history is stored (required for loading a time series)
 	 * @param plotTitle  The title that shall be shown above the plot
-	 * @param plotLowerRangeBounday  The lower boundary of possible values
-	 * @param plotUpperRangeBoundary  The upper boundary of possible values
 	 * @param gradientColorStart  The start color of the gradient to fill the plot
 	 * @param gradientColorEnd  The end color of the gradient to fill the plot
 	 * @param gradientEndCoordinateY  The pixel y-index where the color gradient shall end (and be mirrored)
 	 * @param lineAndPointColor  The color of the line and all points
 	 */
-	public void init(String seriesType, String seriesId, int maxHistorySize, String storageLocation,
-			String plotTitle, int plotLowerRangeBounday, int plotUpperRangeBoundary,
+	public void init(String seriesType, String seriesId, int maxHistorySize, String storageLocation, String plotTitle, 
 			int gradientColorStart, int gradientColorEnd, int gradientEndCoordinateY,
 			int lineAndPointColor)
 	{
@@ -135,7 +153,10 @@ public class FlowerPowerPlotFragment extends Fragment
 		title.setText(plotTitle);
 		
 		plot = (XYTimeSeriesPlot) getView().findViewById(R.id.plot);
-		plot.init(timeSeries, plotTitle, plotLowerRangeBounday, plotUpperRangeBoundary, 
+
+		// init plot with auto-scale boundaries (10% upper and lower padding)
+		plot.init(timeSeries, plotTitle, (int)(timeSeries.getLowestValue() - (timeSeries.getLowestValue() / 10)), 
+				(int)(timeSeries.getHighestValue() + (timeSeries.getHighestValue() / 10)),
 				gradientColorStart, gradientColorEnd, gradientEndCoordinateY,
 				lineAndPointColor);
 	}

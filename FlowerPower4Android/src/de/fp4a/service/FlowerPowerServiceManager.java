@@ -181,12 +181,22 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 	
 	public void enableAutoConnect(long period)
 	{
-		service.enableAutoConnect(period);
+		service.enableReconnect(period);
 	}
 
 	public void disableAutoConnect()
 	{
-		service.disableAutoConnect();
+		service.disableReconnect();
+	}
+	
+	public void enableReconnect(long period)
+	{
+		service.enableReconnect(period);
+	}
+
+	public void disableReconnect()
+	{
+		service.disableReconnect();
 	}
 	
 	public void addServiceListener(IFlowerPowerServiceListener listener)

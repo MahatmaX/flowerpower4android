@@ -113,6 +113,9 @@ public class FlowerPowerActivity extends Activity
 				
 				// once notifications are enabled, the persistency manager is also initialized in order to store all those values
 				serviceManager.enablePersistency(5000, 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL, "flowerpower4android");
+				
+				// and check once in a minute if the flower power is still connected and try to reconnect if not 
+				serviceManager.enableReconnect(60000);
 			}
 		});
 		
@@ -131,7 +134,7 @@ public class FlowerPowerActivity extends Activity
 				Log.i(FlowerPowerConstants.TAG, "Activity.serviceListener() device connected");
 				invalidateOptionsMenu();
 				
-				serviceManager.enableAutoConnect(1000 * 60 * 10); // 10 mins
+				serviceManager.enableReconnect(1000 * 60 * 10); // 10 mins
 			}
 			
 			public void deviceDisconnected()
