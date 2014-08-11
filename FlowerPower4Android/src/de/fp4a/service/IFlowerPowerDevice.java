@@ -20,8 +20,8 @@ public interface IFlowerPowerDevice
 	public void readSoilMoisture();
 	public void readSunlight();
 	
-	public void notifyTemperature(boolean enable);
-	public void notifySoilMoisture(boolean enable);
-	public void notifySunlight(boolean enable);
-	public void notifyBatteryLevel(boolean enable);
+	public void notifyTemperature(boolean enable, long period);
+	public void notifySoilMoisture(boolean enable, long period);
+	public void notifySunlight(boolean enable, long period);
+	public void notifyBatteryLevel(boolean enable, long period);
 }

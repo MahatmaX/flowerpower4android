@@ -45,6 +45,10 @@ import de.fp4a.util.Util;
  */
 public class FlowerPowerActivity extends Activity
 {
+	private final static int PERIOD_READ_UPDATE = 1001;
+	private final static int PERIOD_PERSISTENCY_UPDATE = 5000;
+	private final static int PERIOD_RECONNECT = 60000 * 10;
+	
 	private IFlowerPowerServiceManager serviceManager;
 	private IFlowerPowerDevice device;
 	
@@ -106,16 +110,16 @@ public class FlowerPowerActivity extends Activity
 			{
 				Log.i(FlowerPowerConstants.TAG, "Activity.onClick() Notifications " + (checkBox.isChecked() ? "enabled" : "disabled") + ", device connected ? " + serviceManager.isConnected());
 				
-				device.notifyTemperature(checkBox.isChecked());
-				device.notifySunlight(checkBox.isChecked());
-				device.notifySoilMoisture(checkBox.isChecked());
-				device.notifyBatteryLevel(checkBox.isChecked());
+				device.notifyTemperature(checkBox.isChecked(), PERIOD_READ_UPDATE);
+				device.notifySunlight(checkBox.isChecked(), PERIOD_READ_UPDATE);
+				device.notifySoilMoisture(checkBox.isChecked(), PERIOD_READ_UPDATE);
+				device.notifyBatteryLevel(checkBox.isChecked(), PERIOD_READ_UPDATE);
 				
 				// once notifications are enabled, the persistency manager is also initialized in order to store all those values
-				serviceManager.enablePersistency(5000, 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL, "flowerpower4android");
+				serviceManager.enablePersistency(PERIOD_PERSISTENCY_UPDATE, 1000, FlowerPowerConstants.PERSISTENCY_STORAGE_LOCATION_INTERNAL, "flowerpower4android");
 				
 				// and check once in a minute if the flower power is still connected and try to reconnect if not 
-				serviceManager.enableReconnect(60000);
+				serviceManager.enableReconnect(PERIOD_RECONNECT);
 			}
 		});
 		

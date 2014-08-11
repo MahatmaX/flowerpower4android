@@ -87,12 +87,17 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	private Timer timerReconnect;
 	private TimerTask timerTaskNotifySoilMoisture;
 	private TimerTask timerTaskNotifyBatteryLevel;
-
+	private TimerTask timerTaskNotifySunlight;
+	private TimerTask timerTaskNotifyTemperature;
 	private TimerTask timerTaskReconnect;
 	private boolean notifyBatteryLevel; // used for reconnect
 	private boolean notifySunlight; // used for reconnect
 	private boolean notifySoilMoisture; // used for reconnect
 	private boolean notifyTemperature; // used for reconnect
+	private long notifyPeriodBatteryLevel; // used for reconnect
+	private long notifyPeriodSunlight; // used for reconnect
+	private long notifyPeriodSoilMoisture; // used for reconnect
+	private long notifyPeriodTemperature; // used for reconnect
 	
 	// Implements callback methods for GATT events that the app cares about. For example,
 	// connection change and services discovered.
@@ -533,10 +538,10 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 						public void run()
 						{
 							Log.d(FlowerPowerConstants.TAG, "Try to re-subscribe notifications...");
-							if (notifyBatteryLevel) notifyBatteryLevel(true);
-							if (notifyTemperature) notifyTemperature(true);
-							if (notifySoilMoisture) notifySoilMoisture(true);
-							if (notifySunlight) notifySunlight(true);
+							if (notifyBatteryLevel) notifyBatteryLevel(true, notifyPeriodBatteryLevel);
+							if (notifyTemperature) notifyTemperature(true, notifyPeriodTemperature);
+							if (notifySoilMoisture) notifySoilMoisture(true, notifyPeriodSoilMoisture);
+							if (notifySunlight) notifySunlight(true, notifyPeriodSunlight);
 						}
 					}, period);
 				}
@@ -762,34 +767,95 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	
 	/**
 	 * Enable notifications for temperature.
-	 * @param enable  true to enable, false to disable
+	 * @param enable  true to enable, false to disable. Use the same period for enabling and disabling.
+	 * @param period  update period in ms. Not evaluated if enable == false. 
+	 *                If period == 1000 than the standard bluetooth notification mechanism is used, otherwise a timer-based mechanism is in charge.
 	 */
-	public void notifyTemperature(boolean enable)
+	public void notifyTemperature(boolean enable, long period)
 	{
 		notifyTemperature = enable;
-		if (isConnected())
-			queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE)), enable);
+		notifyPeriodTemperature = period;
+		
+		if (period == 1000)
+		{
+			if (isConnected())
+				queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_TEMPERATURE)), enable);
+		}
+		else
+		{
+			if (timerTaskNotifyTemperature != null) // if task already exists, cancel
+			{
+				timerTaskNotifyTemperature.cancel();
+				timerTaskNotifyTemperature = null;
+				timerNotify.purge();
+			}
+			
+			notifyTemperature = enable;
+			
+			if (enable && isConnected()) // create and schedule a new task if required
+			{
+				timerTaskNotifyTemperature = new TimerTask() {
+					public void run()
+					{
+						readTemperature();
+					} 
+				};
+				timerNotify.schedule(timerTaskNotifyTemperature, 0, period);
+			}
+		}
 	}
 	
 	/**
 	 * Enable notifications for sunlight.
-	 * @param enable  true to enable, false to disable
+	 * @param enable  true to enable, false to disable. Use the same period for enabling and disabling.
+	 * @param period  update period in ms. Not evaluated if enable == false. 
+	 *                If period == 1000 than the standard bluetooth notification mechanism is used, otherwise a timer-based mechanism is in charge.
 	 */
-	public void notifySunlight(boolean enable)
+	public void notifySunlight(boolean enable, long period)
 	{
 		notifySunlight = enable;
-		if (isConnected())
-			queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT)), enable);
+		notifyPeriodSunlight = period;
+		
+		if (period == 1000)
+		{
+			if (isConnected())
+				queue.enqueueNotify(getFlowerPowerService().getCharacteristic(UUID.fromString(FlowerPowerConstants.CHARACTERISTIC_UUID_SUNLIGHT)), enable);
+		}
+		else
+		{
+			if (timerTaskNotifySunlight != null) // if task already exists, cancel
+			{
+				timerTaskNotifySunlight.cancel();
+				timerTaskNotifySunlight = null;
+				timerNotify.purge();
+			}
+			
+			notifySunlight = enable;
+			
+			if (enable && isConnected()) // create and schedule a new task if required
+			{
+				timerTaskNotifySunlight = new TimerTask() {
+					public void run()
+					{
+						readSunlight();
+					} 
+				};
+				timerNotify.schedule(timerTaskNotifySunlight, 0, period);
+			}
+		}
 	}
 	
 	/**
 	 * Enable notifications for soil moisture.
 	 * @param enable  true to enable, false to disable
+	 * @param period  update period in ms. Not evaluated if enable == false
 	 */
-	public void notifySoilMoisture(boolean enable)
+	public void notifySoilMoisture(boolean enable, long period)
 	{
 		// for some reason, the 'classic' notification mechanism does not work for this characteristic
 		// hence use a timer for periodically update the notification
+	
+		notifyPeriodSoilMoisture = period;
 		
 		if (timerTaskNotifySoilMoisture != null) // if task already exists, cancel
 		{
@@ -808,16 +874,18 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 					readSoilMoisture();
 				} 
 			};
-			timerNotify.schedule(timerTaskNotifySoilMoisture, 0, 1000);
+			timerNotify.schedule(timerTaskNotifySoilMoisture, 0, period);
 		}
 	}
 	
 	/**
 	 * Enable notifications for battery level.
 	 * @param enable  true to enable, false to disable
+	 * @param period  update period in ms. Not evaluated if enable == false
 	 */
-	public void notifyBatteryLevel(boolean enable)
+	public void notifyBatteryLevel(boolean enable, long period)
 	{
+		notifyPeriodBatteryLevel = period;
 		// for some reason, the 'classic' notification mechanism does not work for this characteristic
 		// hence use a timer for periodically update the notification
 		
@@ -838,7 +906,7 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 					readBatteryLevel();
 				}
 			};
-			timerNotify.schedule(timerTaskNotifyBatteryLevel, 0, 1000);
+			timerNotify.schedule(timerTaskNotifyBatteryLevel, 0, period);
 		}
 	}
 	
