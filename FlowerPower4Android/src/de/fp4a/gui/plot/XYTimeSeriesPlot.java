@@ -42,7 +42,7 @@ public class XYTimeSeriesPlot extends XYPlot
 		super(context, attrs, defStyle);
 	}
 
-	public void init(ITimeSeriesModel timeSeries, String seriesTitle, int lowerRangeBoundary, int upperRangeBoundary, 
+	public void init(final ITimeSeriesModel timeSeries, String seriesTitle, int lowerRangeBoundary, int upperRangeBoundary, 
 			int gradientColorStart, int gradientColorEnd, int gradientEndCoordinateY,
 			int lineAndPointColor)
 	{
@@ -82,8 +82,8 @@ public class XYTimeSeriesPlot extends XYPlot
         setDomainStep(XYStepMode.SUBDIVIDE, 8);
         setRangeStep(XYStepMode.SUBDIVIDE, 11);
         
-        getGraphWidget().getDomainLabelPaint().setTextSize(20); // 10 for Gio (320x480), 16 for Nexus Prime(720x1184)
-        getGraphWidget().getRangeLabelPaint().setTextSize(20); // 10 for Gio(320x480), 16 for Nexus Prime(720x1184)
+        getGraphWidget().getDomainLabelPaint().setTextSize(12); // 10 for Gio (320x480), 16 for Nexus Prime(720x1184)
+        getGraphWidget().getRangeLabelPaint().setTextSize(12); // 10 for Gio(320x480), 16 for Nexus Prime(720x1184)
         
         NumberFormat nf = NumberFormat.getNumberInstance();
 		nf.setMaximumFractionDigits(1);
@@ -91,13 +91,18 @@ public class XYTimeSeriesPlot extends XYPlot
 		
 		setDomainValueFormat(new Format() {
         	
-        	private SimpleDateFormat format = new SimpleDateFormat("HH:mm, dd.MMM");
+        	private SimpleDateFormat formatHour = new SimpleDateFormat("HH:mm");
+        	private SimpleDateFormat formatDay = new SimpleDateFormat("dd.MMM");
         	
         	public StringBuffer format(Object obj, StringBuffer toAppendTo, FieldPosition pos)
     		{
     			long timestamp = ((Number) obj).longValue();
     			Date date = new Date(timestamp);
-    			return format.format(date, toAppendTo, pos);
+    			// if the timeseries spans more than 24 hours, use the day format, else use the hour format
+    			if (timeSeries.getTimestamp(timeSeries.size()-1) - timeSeries.getTimestamp(0) > (1000 * 60 * 60 * 24))
+    				return formatDay.format(date, toAppendTo, pos);
+    			else
+    				return formatHour.format(date, toAppendTo, pos);
     		}
 
     		public Object parseObject(String source, ParsePosition pos) { return null; }
