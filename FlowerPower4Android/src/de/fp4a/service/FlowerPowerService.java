@@ -414,42 +414,43 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 	 */
 	public boolean connect(final String address)
 	{
+		timerNotify = new Timer();
+		
 		Log.i(FlowerPowerConstants.TAG, "FlowerPowerService.connect() to " + address);
 		
 		if (bluetoothAdapter == null || address == null)
 		{
-			Log.w(FlowerPowerConstants.TAG, "BluetoothAdapter not initialized or unspecified address.");
+			Log.w(FlowerPowerConstants.TAG, "FlowerPowerService.connect(): BluetoothAdapter not initialized or unspecified address.");
 			return false;
 		}
 
-		// Previously connected device. Try to reconnect.
-		if (bluetoothDeviceAddress != null && address.equals(bluetoothDeviceAddress) && bluetoothGatt != null)
-		{
-			Log.d(FlowerPowerConstants.TAG, "Trying to use an existing mBluetoothGatt for connection.");
-			if (bluetoothGatt.connect())
-			{
-				mConnectionState = STATE_CONNECTING;
-				return true;
-			}
-			else
-			{
-				return false;
-			}
-		}
+//		// Previously connected device. Try to reconnect.
+//		if ((bluetoothDeviceAddress != null) && address.equals(bluetoothDeviceAddress) && (bluetoothGatt != null))
+//		{
+//			Log.d(FlowerPowerConstants.TAG, "FlowerPowerService.connect(): Trying to use an existing mBluetoothGatt for connection.");
+//			if (bluetoothGatt.connect())
+//			{
+//				mConnectionState = STATE_CONNECTING;
+//				return true;
+//			}
+//			else
+//			{
+//				return false;
+//			}
+//		}
 
 		final BluetoothDevice device = bluetoothAdapter.getRemoteDevice(address);
 		if (device == null)
 		{
-			Log.w(FlowerPowerConstants.TAG, "Device not found.  Unable to connect.");
+			Log.w(FlowerPowerConstants.TAG, "FlowerPowerService.connect(): Device not found.  Unable to connect.");
 			return false;
 		}
 		// We want to directly connect to the device, so we are setting the autoConnect parameter to false.
 		bluetoothGatt = device.connectGatt(this, false, gattCallback);
-		Log.d(FlowerPowerConstants.TAG, "Trying to create a new connection.");
+		Log.d(FlowerPowerConstants.TAG, "FlowerPowerService.connect(): Trying to create a new connection.");
 		bluetoothDeviceAddress = address;
 		mConnectionState = STATE_CONNECTING;
-		
-		timerNotify = new Timer();
+		 
 		return true;
 	}
 
@@ -908,6 +909,26 @@ public class FlowerPowerService extends Service implements IFlowerPowerDevice
 			};
 			timerNotify.schedule(timerTaskNotifyBatteryLevel, 0, period);
 		}
+	}
+	
+	public boolean isNotifyTemperature()
+	{
+		return notifyTemperature;
+	}
+
+	public boolean isNotifySunlight()
+	{
+		return notifySunlight;
+	}
+
+	public boolean isNotifySoilMoisture()
+	{
+		return notifySoilMoisture;
+	}
+
+	public boolean isNotifyBatteryLevel()
+	{
+		return notifyBatteryLevel;
 	}
 	
 	private String getSeriesId()

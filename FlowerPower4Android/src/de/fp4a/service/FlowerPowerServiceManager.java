@@ -122,14 +122,16 @@ public class FlowerPowerServiceManager implements IFlowerPowerServiceManager
 		intentFilter.addAction(FlowerPowerService.DISCONNECTED);
 		intentFilter.addAction(FlowerPowerService.SERVICES_DISCOVERED);
 		intentFilter.addAction(FlowerPowerService.DATA_AVAILABLE);
-
+		
 		context.registerReceiver(serviceUpdateReceiver, intentFilter);
 		
 		if (service != null)
 		{
 			boolean result = service.connect(deviceAddress);
-			Log.d(FlowerPowerConstants.TAG, "Connect request result=" + result);
+			Log.d(FlowerPowerConstants.TAG, "FlowerPowerServiceManager: Connect request result=" + result);
 		}
+		else
+			Log.e(FlowerPowerConstants.TAG, "FlowerPowerServiceManager: Service is null, unable to connect");
 	}
 
 	/**

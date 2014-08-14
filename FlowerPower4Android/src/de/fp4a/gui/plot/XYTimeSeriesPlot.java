@@ -99,7 +99,7 @@ public class XYTimeSeriesPlot extends XYPlot
     			long timestamp = ((Number) obj).longValue();
     			Date date = new Date(timestamp);
     			// if the timeseries spans more than 24 hours, use the day format, else use the hour format
-    			if (timeSeries.getTimestamp(timeSeries.size()-1) - timeSeries.getTimestamp(0) > (1000 * 60 * 60 * 24))
+    			if ((timeSeries.size() > 0) && timeSeries.getTimestamp(timeSeries.size()-1) - timeSeries.getTimestamp(0) > (1000 * 60 * 60 * 24))
     				return formatDay.format(date, toAppendTo, pos);
     			else
     				return formatHour.format(date, toAppendTo, pos);

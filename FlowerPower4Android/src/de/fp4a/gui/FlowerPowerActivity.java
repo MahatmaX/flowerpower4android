@@ -45,9 +45,9 @@ import de.fp4a.util.Util;
  */
 public class FlowerPowerActivity extends Activity
 {
-	private final static int PERIOD_READ_UPDATE = 1001;
+	private final static int PERIOD_READ_UPDATE = 5000;
 	private final static int PERIOD_PERSISTENCY_UPDATE = 5000;
-	private final static int PERIOD_RECONNECT = 60000 * 10;
+	private final static int PERIOD_RECONNECT = 60000;
 	
 	private IFlowerPowerServiceManager serviceManager;
 	private IFlowerPowerDevice device;
@@ -123,6 +123,11 @@ public class FlowerPowerActivity extends Activity
 			}
 		});
 		
+		// check if notifications were formerly enabled and if so, enable them again
+		// ToDo: I am not sure, if this actually works, i.e. is the OnClickListener called ??? 
+		if (!checkBox.isSelected() && (device != null) && 
+				device.isNotifyTemperature() && device.isNotifySunlight() && device.isNotifySoilMoisture() && device.isNotifyBatteryLevel())
+			checkBox.setSelected(true);
 		
 		serviceManager = FlowerPowerServiceManager.getInstance(deviceAddress, this);
 		
